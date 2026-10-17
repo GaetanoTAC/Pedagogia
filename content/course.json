@@ -1,0 +1,306 @@
+{
+  "_nota": "Contenuti iniziali caricati al primo avvio, quando il database è vuoto. Le domande sono una BOZZA da validare dal docente: dopo il primo avvio si modificano dall'area Amministrazione.",
+  "passThreshold": 0.75,
+  "lessons": [
+    {
+      "title": "Il cavo orale: anatomia essenziale",
+      "description": "Denti, gengive, lingua e saliva: come è fatta la bocca e perché ogni struttura conta per la salute.",
+      "questions": [
+        {
+          "text": "Qual è il tessuto più duro e mineralizzato del corpo umano?",
+          "options": ["Dentina", "Smalto", "Cemento radicolare", "Osso alveolare"],
+          "correct": 1,
+          "explanation": "Lo smalto è composto per circa il 96% da minerale (idrossiapatite) ed è il tessuto più duro dell'organismo."
+        },
+        {
+          "text": "Quanti sono i denti permanenti in un adulto, inclusi i denti del giudizio?",
+          "options": ["20", "28", "32", "36"],
+          "correct": 2,
+          "explanation": "La dentatura permanente completa conta 32 elementi, 28 se i terzi molari non sono presenti."
+        },
+        {
+          "text": "Quale tra queste NON è una funzione della saliva?",
+          "options": ["Tamponare gli acidi", "Favorire la remineralizzazione dello smalto", "Produrre lo smalto dentale", "Avviare la digestione degli amidi"],
+          "correct": 2,
+          "explanation": "Lo smalto si forma durante lo sviluppo del dente e non viene prodotto dalla saliva, che però aiuta a remineralizzarlo."
+        },
+        {
+          "text": "Dove si trova la polpa dentale?",
+          "options": ["Sulla superficie della corona", "All'interno del dente, sotto la dentina", "Tra gengiva e osso", "Nel legamento parodontale"],
+          "correct": 1,
+          "explanation": "La polpa, ricca di vasi e nervi, occupa la camera pulpare e i canali radicolari, all'interno della dentina."
+        }
+      ]
+    },
+    {
+      "title": "Placca batterica e biofilm",
+      "description": "Cos'è la placca, come si forma in poche ore e perché è il punto di partenza di carie e malattie gengivali.",
+      "questions": [
+        {
+          "text": "Che cos'è la placca dentale?",
+          "options": ["Un residuo di cibo che si scioglie da solo", "Un biofilm batterico che aderisce alle superfici dei denti", "Uno strato di smalto danneggiato", "Un deposito di calcio sempre visibile a occhio nudo"],
+          "correct": 1,
+          "explanation": "La placca è un biofilm organizzato di batteri immersi in una matrice, che aderisce tenacemente ai denti."
+        },
+        {
+          "text": "Cosa succede alla placca se non viene rimossa per lungo tempo?",
+          "options": ["Scompare spontaneamente", "Può mineralizzare e trasformarsi in tartaro", "Diventa protettiva per lo smalto", "Si trasforma in dentina"],
+          "correct": 1,
+          "explanation": "La placca non rimossa assorbe minerali dalla saliva e si calcifica in tartaro, rimovibile solo dal professionista."
+        },
+        {
+          "text": "Il tartaro può essere rimosso efficacemente con lo spazzolino a casa?",
+          "options": ["Sì, con uno spazzolino duro", "Sì, con un dentifricio sbiancante", "No, serve una seduta di igiene professionale", "Sì, con il collutorio"],
+          "correct": 2,
+          "explanation": "Una volta mineralizzato, il tartaro richiede strumenti professionali (ablazione)."
+        },
+        {
+          "text": "Perché la placca si riforma ogni giorno?",
+          "options": ["Perché i batteri orali ricolonizzano continuamente le superfici dentali", "Perché lo spazzolino la deposita", "Perché è prodotta dallo smalto", "Perché dipende solo dal fumo"],
+          "correct": 0,
+          "explanation": "I batteri del cavo orale ricolonizzano la pellicola che ricopre i denti già poche ore dopo la pulizia."
+        }
+      ]
+    },
+    {
+      "title": "La carie: come nasce e come si previene",
+      "description": "Zuccheri, acidi e tempo: il meccanismo della carie e le abitudini che la tengono lontana.",
+      "questions": [
+        {
+          "text": "Qual è il meccanismo principale della carie?",
+          "options": ["Un trauma meccanico", "La demineralizzazione dei tessuti dentali da parte di acidi prodotti dai batteri", "Un'infezione virale", "Un difetto genetico dello smalto"],
+          "correct": 1,
+          "explanation": "I batteri metabolizzano gli zuccheri e producono acidi che sciolgono i minerali dello smalto e della dentina."
+        },
+        {
+          "text": "Per il rischio di carie conta di più…",
+          "options": ["La quantità totale di zucchero mangiata una volta a settimana", "La frequenza con cui si assumono zuccheri durante la giornata", "Il colore del cibo", "La temperatura delle bevande"],
+          "correct": 1,
+          "explanation": "Ogni assunzione di zuccheri provoca un abbassamento del pH: spuntini zuccherini frequenti moltiplicano gli attacchi acidi."
+        },
+        {
+          "text": "Una carie iniziale dello smalto (macchia bianca)…",
+          "options": ["È sempre irreversibile", "Può remineralizzarsi con fluoro e buona igiene", "Va sempre devitalizzata", "Non ha relazione con la placca"],
+          "correct": 1,
+          "explanation": "Nelle fasi iniziali, con fluoro, saliva e controllo della placca, la lesione può arrestarsi e remineralizzarsi."
+        },
+        {
+          "text": "Quale abitudine riduce maggiormente il rischio di carie?",
+          "options": ["Lavare i denti con dentifricio al fluoro due volte al giorno", "Usare solo il collutorio", "Mangiare caramelle senza zucchero dopo ogni pasto al posto dello spazzolino", "Sciacquare con acqua dopo i pasti"],
+          "correct": 0,
+          "explanation": "Lo spazzolamento quotidiano con dentifricio fluorato è la misura preventiva con più evidenza scientifica."
+        }
+      ]
+    },
+    {
+      "title": "Gengivite e parodontite",
+      "description": "Dal sanguinamento gengivale alla perdita dei denti: riconoscere i segnali e intervenire in tempo.",
+      "questions": [
+        {
+          "text": "Qual è il segno più comune della gengivite?",
+          "options": ["Dolore ai denti con il freddo", "Gengive arrossate che sanguinano durante lo spazzolamento", "Denti più bianchi", "Macchie scure sullo smalto"],
+          "correct": 1,
+          "explanation": "Il sanguinamento gengivale è il segnale tipico dell'infiammazione causata dalla placca."
+        },
+        {
+          "text": "La gengivite è reversibile?",
+          "options": ["No, mai", "Sì, con una corretta igiene orale e la rimozione della placca", "Solo con antibiotici", "Solo con la chirurgia"],
+          "correct": 1,
+          "explanation": "La gengivite regredisce quando si rimuove regolarmente la placca e si eseguono le sedute di igiene professionale."
+        },
+        {
+          "text": "Che cosa caratterizza la parodontite rispetto alla gengivite?",
+          "options": ["La perdita dei tessuti di sostegno del dente, compreso l'osso", "Solo un arrossamento passeggero", "L'assenza di batteri", "Il colore giallo dei denti"],
+          "correct": 0,
+          "explanation": "Nella parodontite l'infiammazione distrugge legamento e osso alveolare, fino alla mobilità e alla perdita del dente."
+        },
+        {
+          "text": "Se le gengive sanguinano mentre ti lavi i denti, cosa conviene fare?",
+          "options": ["Smettere di lavare quella zona", "Continuare a pulire con delicatezza e prenotare un controllo", "Usare uno spazzolino più duro", "Ignorarlo: è normale"],
+          "correct": 1,
+          "explanation": "Smettere di pulire peggiora l'infiammazione: serve una pulizia delicata ma accurata e una valutazione professionale."
+        }
+      ]
+    },
+    {
+      "title": "Spazzolamento: tecnica e strumenti",
+      "description": "Manuale o elettrico, setole, tempi e movimenti: come lavare i denti nel modo giusto.",
+      "questions": [
+        {
+          "text": "Per quanto tempo si raccomanda di spazzolare i denti?",
+          "options": ["30 secondi", "Circa 2 minuti", "10 minuti", "Non conta il tempo"],
+          "correct": 1,
+          "explanation": "Circa due minuti, due volte al giorno, permettono di raggiungere tutte le superfici."
+        },
+        {
+          "text": "Che tipo di setole è generalmente consigliato?",
+          "options": ["Dure", "Morbide o medie", "Metalliche", "Qualsiasi, purché nuove ogni anno"],
+          "correct": 1,
+          "explanation": "Setole morbide o medie puliscono bene senza traumatizzare gengive e smalto."
+        },
+        {
+          "text": "Ogni quanto conviene sostituire lo spazzolino (o la testina)?",
+          "options": ["Ogni 3 mesi circa, o prima se le setole sono rovinate", "Una volta l'anno", "Ogni settimana", "Solo quando si rompe"],
+          "correct": 0,
+          "explanation": "Con l'usura le setole perdono efficacia: in media si sostituisce ogni tre mesi."
+        },
+        {
+          "text": "Dopo lo spazzolamento serale con dentifricio al fluoro è meglio…",
+          "options": ["Sciacquare abbondantemente con acqua", "Sputare l'eccesso senza risciacquare troppo", "Bere una bibita", "Usare subito un collutorio sbiancante"],
+          "correct": 1,
+          "explanation": "Evitare risciacqui abbondanti lascia più fluoro a contatto con i denti, aumentandone l'effetto protettivo."
+        }
+      ]
+    },
+    {
+      "title": "Pulizia interdentale",
+      "description": "Filo, scovolini e idropulsori: come raggiungere il 40% delle superfici che lo spazzolino non pulisce.",
+      "questions": [
+        {
+          "text": "Perché è importante la pulizia interdentale?",
+          "options": ["Perché lo spazzolino non raggiunge bene gli spazi tra i denti", "Perché sbianca i denti", "Perché sostituisce lo spazzolino", "Serve solo a chi ha l'apparecchio"],
+          "correct": 0,
+          "explanation": "Le superfici tra i denti sono tra le zone più colpite da carie e malattia parodontale e lo spazzolino non le raggiunge."
+        },
+        {
+          "text": "Con quale frequenza si consiglia la pulizia interdentale?",
+          "options": ["Una volta al mese", "Una volta al giorno", "Solo prima del dentista", "Una volta a settimana"],
+          "correct": 1,
+          "explanation": "Una pulizia interdentale quotidiana, di solito la sera, è la raccomandazione standard."
+        },
+        {
+          "text": "Quando sono indicati gli scovolini?",
+          "options": ["Quando gli spazi interdentali sono sufficientemente ampi", "Mai, sono dannosi", "Solo sui denti da latte", "Solo per la lingua"],
+          "correct": 0,
+          "explanation": "Lo scovolino va scelto della misura adatta allo spazio: dove c'è spazio è spesso più efficace del filo."
+        },
+        {
+          "text": "Usando il filo interdentale, la tecnica corretta prevede di…",
+          "options": ["Farlo scattare con forza sulla gengiva", "Avvolgerlo a C attorno al dente e farlo scorrere delicatamente sotto il margine gengivale", "Passarlo solo sulla superficie esterna", "Usare lo stesso tratto di filo per tutta la bocca"],
+          "correct": 1,
+          "explanation": "Il filo va adattato a C contro ciascuna superficie e mosso delicatamente, usando un tratto pulito per ogni spazio."
+        }
+      ]
+    },
+    {
+      "title": "Alimentazione e salute orale",
+      "description": "Zuccheri nascosti, bevande acide ed erosione: cosa mangiare e bere per proteggere i denti.",
+      "questions": [
+        {
+          "text": "Che cos'è l'erosione dentale?",
+          "options": ["La perdita di smalto dovuta ad acidi non batterici, ad esempio da bevande acide", "Una carie profonda", "Un'infiammazione della gengiva", "Un deposito di tartaro"],
+          "correct": 0,
+          "explanation": "L'erosione è causata da acidi di origine alimentare o gastrica, non dai batteri."
+        },
+        {
+          "text": "Dopo aver bevuto una bevanda molto acida è preferibile…",
+          "options": ["Lavarsi subito i denti con forza", "Sciacquare con acqua e attendere prima di spazzolare", "Bere un'altra bevanda acida", "Masticare ghiaccio"],
+          "correct": 1,
+          "explanation": "Lo smalto appena esposto agli acidi è più vulnerabile: meglio sciacquare e aspettare prima dello spazzolamento."
+        },
+        {
+          "text": "Quale tra questi è uno spuntino più \"amico dei denti\"?",
+          "options": ["Biscotti farciti", "Formaggio e verdura cruda", "Caramelle gommose", "Succhi di frutta zuccherati"],
+          "correct": 1,
+          "explanation": "Formaggio e verdure stimolano la saliva e non apportano zuccheri fermentabili."
+        },
+        {
+          "text": "Masticare una gomma senza zucchero dopo i pasti…",
+          "options": ["Danneggia lo smalto", "Stimola la salivazione e aiuta a neutralizzare gli acidi", "Sostituisce lo spazzolino", "Non ha alcun effetto"],
+          "correct": 1,
+          "explanation": "La gomma senza zucchero aumenta il flusso salivare, ma non sostituisce lo spazzolamento."
+        }
+      ]
+    },
+    {
+      "title": "Fumo, alcol e lesioni orali",
+      "description": "Gli effetti di fumo, alcol e piercing sulla bocca e come fare l'autoesame del cavo orale.",
+      "questions": [
+        {
+          "text": "Il fumo di tabacco…",
+          "options": ["Protegge le gengive", "Aumenta il rischio di malattia parodontale e di tumori del cavo orale", "Non ha effetti sulla bocca", "Riduce il tartaro"],
+          "correct": 1,
+          "explanation": "Il fumo è uno dei principali fattori di rischio per parodontite e carcinoma orale."
+        },
+        {
+          "text": "Perché nei fumatori la gengivite può passare inosservata?",
+          "options": ["Perché il fumo riduce il sanguinamento gengivale mascherando l'infiammazione", "Perché i fumatori non hanno placca", "Perché il fumo cura la gengivite", "Perché la gengiva diventa trasparente"],
+          "correct": 0,
+          "explanation": "La vasocostrizione indotta dal fumo riduce il sanguinamento, uno dei segnali d'allarme principali."
+        },
+        {
+          "text": "Una lesione della bocca (ulcera, macchia bianca o rossa) che non guarisce dopo circa 2 settimane…",
+          "options": ["Va ignorata", "Va fatta valutare da un professionista", "Si cura con il collutorio", "È sempre dovuta al morso"],
+          "correct": 1,
+          "explanation": "Le lesioni persistenti oltre due settimane richiedono una valutazione per escludere patologie importanti."
+        },
+        {
+          "text": "Il consumo di alcol associato al fumo…",
+          "options": ["Annulla i rischi del fumo", "Moltiplica il rischio di tumori del cavo orale", "Non ha relazioni con la salute orale", "Riduce l'alito cattivo"],
+          "correct": 1,
+          "explanation": "Alcol e tabacco hanno un effetto sinergico che aumenta in modo marcato il rischio di carcinoma orale."
+        }
+      ]
+    },
+    {
+      "title": "Fluoro e prevenzione professionale",
+      "description": "Fluoro, sigillature e sedute di igiene: le armi della prevenzione e quando rivolgersi al dentista.",
+      "questions": [
+        {
+          "text": "In che modo il fluoro protegge i denti?",
+          "options": ["Rende lo smalto più resistente agli acidi e favorisce la remineralizzazione", "Uccide tutti i batteri della bocca", "Sbianca i denti", "Sostituisce la dentina"],
+          "correct": 0,
+          "explanation": "Il fluoro favorisce la formazione di cristalli più resistenti agli acidi e la riparazione delle lesioni iniziali."
+        },
+        {
+          "text": "Per un adulto, che concentrazione di fluoro è tipica di un dentifricio standard?",
+          "options": ["Circa 1000–1500 ppm", "0 ppm", "10 ppm", "Oltre 10.000 ppm"],
+          "correct": 0,
+          "explanation": "I dentifrici per adulti contengono in genere 1000–1500 ppm di fluoro."
+        },
+        {
+          "text": "A cosa servono le sigillature?",
+          "options": ["A chiudere i solchi dei molari per prevenire la carie", "A sbiancare i denti", "A curare la parodontite", "A raddrizzare i denti"],
+          "correct": 0,
+          "explanation": "Le sigillature proteggono solchi e fessure dei molari, dove la placca si accumula facilmente."
+        },
+        {
+          "text": "Con quale frequenza è indicato, in generale, un controllo dal dentista o dall'igienista?",
+          "options": ["Ogni 6–12 mesi, in base al rischio individuale", "Ogni 5 anni", "Solo in caso di dolore", "Ogni settimana"],
+          "correct": 0,
+          "explanation": "Il richiamo va personalizzato sul rischio, ma per la maggior parte delle persone è tra i 6 e i 12 mesi."
+        }
+      ]
+    },
+    {
+      "title": "Bocca e salute generale",
+      "description": "Il legame tra salute orale, diabete, cuore e gravidanza: perché la bocca è lo specchio del corpo.",
+      "questions": [
+        {
+          "text": "Quale malattia sistemica ha una relazione bidirezionale ben documentata con la parodontite?",
+          "options": ["Diabete mellito", "Miopia", "Emicrania", "Asma"],
+          "correct": 0,
+          "explanation": "Il diabete aumenta il rischio di parodontite e la parodontite peggiora il controllo glicemico."
+        },
+        {
+          "text": "Perché l'infiammazione parodontale può influenzare il resto dell'organismo?",
+          "options": ["Perché batteri e mediatori dell'infiammazione possono entrare nel circolo sanguigno", "Perché le gengive producono ormoni", "Perché i denti sono collegati al fegato", "Non può influenzarlo in alcun modo"],
+          "correct": 0,
+          "explanation": "L'infiammazione cronica e la diffusione di batteri e mediatori infiammatori collegano la bocca alla salute sistemica."
+        },
+        {
+          "text": "Durante la gravidanza le gengive…",
+          "options": ["Possono infiammarsi più facilmente per i cambiamenti ormonali", "Diventano immuni alla placca", "Non cambiano mai", "Smettono di sanguinare"],
+          "correct": 0,
+          "explanation": "La \"gengivite gravidica\" è frequente: igiene accurata e controlli sono particolarmente importanti."
+        },
+        {
+          "text": "Qual è il messaggio chiave del corso?",
+          "options": ["La salute orale si costruisce con abitudini quotidiane e controlli regolari", "Basta andare dal dentista quando fa male", "Lo spazzolino è inutile se si usa il collutorio", "La salute della bocca non riguarda il resto del corpo"],
+          "correct": 0,
+          "explanation": "Igiene quotidiana, alimentazione consapevole, stili di vita sani e prevenzione professionale sono la chiave."
+        }
+      ]
+    }
+  ]
+}

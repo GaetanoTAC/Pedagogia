@@ -1,0 +1,18 @@
+{
+  "name": "sorriso-in-salute",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Mini-corso online sulla salute orale per gli studenti Unimi, con videolezioni sequenziali, quiz e tracciamento per l'Open Badge.",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning server/server.js",
+    "dev": "node --env-file-if-exists=.env --disable-warning=ExperimentalWarning --watch server/server.js"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "multer": "^2.0.2"
+  }
+}
