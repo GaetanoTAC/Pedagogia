@@ -37,7 +37,7 @@ export async function quizView({ params, navigate }) {
         <fieldset class="options">
           <legend class="quiz-q">${q.text}</legend>
           ${q.options.map((opt, i) => html`
-            <label class="option">
+            <label class="option" data-glow>
               <input type="radio" name="answer" value="${i}" ${answers[step] === i ? 'checked' : ''}>
               <span class="key" aria-hidden="true">${KEYS[i]}</span>
               <span>${opt}</span>

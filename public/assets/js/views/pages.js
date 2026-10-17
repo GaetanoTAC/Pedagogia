@@ -1,4 +1,5 @@
-import { html, icon, badgeArt, formatDate, confetti, observeReveals } from '../ui.js';
+import { html, icon, badgeArt, badge3d, formatDate, confetti, observeReveals, $ } from '../ui.js';
+import { aurora, spinBadge } from '../motion.js';
 import { api } from '../api.js';
 
 export async function completeView() {
@@ -23,9 +24,9 @@ export async function completeView() {
     dark: true,
     view: html`
     <section class="complete-hero">
-      <div class="orb orb--1"></div><div class="orb orb--2"></div>
+      <canvas class="aurora" aria-hidden="true"></canvas>
       <div class="container">
-        <div class="badge-art" style="margin-bottom:24px">${badgeArt()}</div>
+        ${badge3d({ label: 'Il tuo Open Badge Salute Orale: trascina per ruotarlo' })}
         <span class="chip chip--glass">${icon('sparkles')} Corso completato il ${formatDate(user.courseCompletedAt)}</span>
         <h1 style="margin-top:20px">Complimenti, ${user.firstName}!</h1>
         <p>Hai seguito tutte le ${lessons.length} videolezioni dall'inizio alla fine e superato tutti i quiz. Hai diritto all'Open Badge in Salute Orale.</p>
@@ -34,14 +35,16 @@ export async function completeView() {
     </section>
     <section class="section">
       <div class="container" style="display:grid;gap:24px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
-        <div class="card reveal" data-stagger><h3>${icon('video')} ${lessons.length} lezioni</h3><p style="color:var(--text-muted);margin:0">Circa ${minutes} minuti di formazione seguiti per intero.</p></div>
-        <div class="card reveal" data-stagger><h3>${icon('checks')} Media quiz ${avg}%</h3><p style="color:var(--text-muted);margin:0">Calcolata sul miglior tentativo di ogni quiz.</p></div>
-        <div class="card reveal" data-stagger><h3>${icon('mail')} Rilascio del badge</h3><p style="color:var(--text-muted);margin:0">L'Università ti invierà il badge a <strong>${user.email}</strong>. Non devi fare nient'altro.</p></div>
+        <div class="card reveal" data-stagger data-glow data-tilt><h3>${icon('video')} ${lessons.length} lezioni</h3><p style="color:var(--text-muted);margin:0">Circa ${minutes} minuti di formazione seguiti per intero.</p></div>
+        <div class="card reveal" data-stagger data-glow data-tilt><h3>${icon('checks')} Media quiz ${avg}%</h3><p style="color:var(--text-muted);margin:0">Calcolata sul miglior tentativo di ogni quiz.</p></div>
+        <div class="card reveal" data-stagger data-glow data-tilt><h3>${icon('mail')} Rilascio del badge</h3><p style="color:var(--text-muted);margin:0">L'Università ti invierà il badge a <strong>${user.email}</strong>. Non devi fare nient'altro.</p></div>
       </div>
     </section>`,
     mount(root) {
       observeReveals(root);
       confetti(3000);
+      const stops = [aurora($('.aurora', root)), spinBadge($('.badge-stage', root))];
+      return () => stops.forEach((stop) => stop());
     },
   };
 }

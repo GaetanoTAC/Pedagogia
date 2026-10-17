@@ -105,16 +105,17 @@ export function animateRings(root = document) {
 
 let badgeSeq = 0;
 /** Illustrazione dell'Open Badge del corso. */
-export function badgeArt({ title = 'Salute Orale' } = {}) {
+export function badgeArt({ title = 'Salute Orale', ribbons = true, decorative = false } = {}) {
   const id = `bg${++badgeSeq}`;
-  return raw(`<svg viewBox="0 0 240 290" role="img" aria-label="Open Badge del corso ${esc(title)}">
+  const a11y = decorative ? 'aria-hidden="true"' : `role="img" aria-label="Open Badge del corso ${esc(title)}"`;
+  return raw(`<svg viewBox="0 0 240 ${ribbons ? 290 : 232}" ${a11y}>
     <defs>
       <linearGradient id="${id}a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1D4ED8"/><stop offset=".55" stop-color="#2563EB"/><stop offset="1" stop-color="#38BDF8"/></linearGradient>
       <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DBEAFE"/><stop offset="1" stop-color="#60A5FA"/></linearGradient>
       <linearGradient id="${id}c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1E3A8A"/><stop offset="1" stop-color="#0A1A3F"/></linearGradient>
     </defs>
-    <path d="M78 196 58 282l30-16 18 22 20-84z" fill="url(#${id}c)"/>
-    <path d="M162 196l20 86-30-16-18 22-20-84z" fill="url(#${id}c)"/>
+    ${ribbons ? `<path d="M78 196 58 282l30-16 18 22 20-84z" fill="url(#${id}c)"/>
+    <path d="M162 196l20 86-30-16-18 22-20-84z" fill="url(#${id}c)"/>` : ''}
     <polygon points="120,8 214,62 214,170 120,224 26,170 26,62" fill="url(#${id}b)"/>
     <polygon points="120,22 202,69 202,163 120,210 38,163 38,69" fill="url(#${id}a)"/>
     <polygon points="120,22 202,69 202,163 120,210 38,163 38,69" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="2" stroke-dasharray="2 6"/>
@@ -124,6 +125,39 @@ export function badgeArt({ title = 'Salute Orale' } = {}) {
     <text x="120" y="180" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="700" font-size="13" letter-spacing="2" fill="#fff">${esc(title.toUpperCase())}</text>
     <text x="120" y="54" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="600" font-size="10" letter-spacing="3" fill="#DBEAFE">OPEN BADGE</text>
   </svg>`);
+}
+
+/**
+ * Open Badge in 3D: medaglia esagonale con spessore, fronte e retro.
+ * Si anima con spinBadge() di motion.js.
+ */
+export function badge3d({ label = 'Open Badge Salute Orale: trascina per ruotarlo' } = {}) {
+  const layers = Array.from({ length: 14 }, (_, i) => `<span class="coin-edge" style="--i:${i}"></span>`).join('');
+  return raw(`<div class="badge-stage" tabindex="0" role="img" aria-label="${esc(label)}">
+    <div class="coin">
+      ${layers}
+      <div class="coin-face coin-front">${badgeArt({ ribbons: false, decorative: true })}</div>
+      <div class="coin-face coin-back">
+        <svg viewBox="0 0 240 232" aria-hidden="true">
+          <defs><linearGradient id="cb${++badgeSeq}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1E3A8A"/><stop offset="1" stop-color="#2563EB"/></linearGradient></defs>
+          <polygon points="120,8 214,62 214,170 120,224 26,170 26,62" fill="#BFDBFE"/>
+          <polygon points="120,22 202,69 202,163 120,210 38,163 38,69" fill="url(#cb${badgeSeq})"/>
+          <text x="120" y="96" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="700" font-size="15" fill="#fff">Sorriso in Salute</text>
+          <text x="120" y="122" text-anchor="middle" font-family="Poppins, sans-serif" font-size="10" letter-spacing="1.5" fill="#BFDBFE">CORSO DI SALUTE ORALE</text>
+          <text x="120" y="146" text-anchor="middle" font-family="Poppins, sans-serif" font-size="10" fill="#DBEAFE">10 lezioni · 10 quiz</text>
+          <text x="120" y="172" text-anchor="middle" font-family="Poppins, sans-serif" font-size="8.5" letter-spacing="1.5" fill="#93C5FD">UNIVERSITÀ DEGLI STUDI</text>
+          <text x="120" y="185" text-anchor="middle" font-family="Poppins, sans-serif" font-size="8.5" letter-spacing="1.5" fill="#93C5FD">DI MILANO</text>
+        </svg>
+      </div>
+    </div>
+    <div class="coin-shadow"></div>
+  </div>`);
+}
+
+/** Divide un testo in parole animabili una alla volta. */
+export function splitWords(text, offset = 0) {
+  return raw(text.split(' ').map((w, i) =>
+    `<span class="word" style="--w:${i + offset}">${esc(w)}</span>`).join(' '));
 }
 
 // ---------- Toast ----------

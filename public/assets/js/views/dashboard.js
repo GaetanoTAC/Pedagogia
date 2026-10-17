@@ -1,4 +1,5 @@
-import { html, icon, ring, badgeArt, formatDuration, formatDate, animateRings, observeReveals } from '../ui.js';
+import { html, icon, ring, badge3d, formatDuration, formatDate, animateRings, observeReveals, $ } from '../ui.js';
+import { aurora, countUp, spinBadge } from '../motion.js';
 import { api } from '../api.js';
 
 const STATUS = {
@@ -30,7 +31,7 @@ function lessonItem(l, currentPos) {
       <span class="path-node" aria-hidden="true">${l.status === 'done' ? icon('check') : l.status === 'locked' ? icon('lock') : l.position}</span>
       ${l.status === 'locked'
         ? html`<div class="lesson-card" aria-label="${`Lezione ${l.position}, bloccata`}">${inner}</div>`
-        : html`<a class="lesson-card" href="#/lezione/${l.position}" ${isCurrent ? html`aria-current="step"` : ''}><span class="sr-only">Lezione ${l.position}: </span>${inner}</a>`}
+        : html`<a class="lesson-card" data-glow href="#/lezione/${l.position}" ${isCurrent ? html`aria-current="step"` : ''}><span class="sr-only">Lezione ${l.position}: </span>${inner}</a>`}
     </li>`;
 }
 
@@ -71,7 +72,7 @@ export async function dashboardView() {
     <div class="dash-grid">
       <div>
         <section class="overview reveal" aria-label="Riepilogo avanzamento">
-          <div class="orb orb--1"></div>
+          <canvas class="aurora" aria-hidden="true"></canvas>
           ${ring(pct, { size: 132, stroke: 11, label: `${Math.round(pct)}%`, sub: `${done} di ${total}` })}
           <div class="overview-body">
             <h2>${headline}</h2>
@@ -89,14 +90,14 @@ export async function dashboardView() {
         <section class="card side-card reveal" data-delay="80">
           <h3>${icon('sparkles')} I tuoi numeri</h3>
           <div class="stat-row">
-            <div class="stat"><strong>${done}</strong><span>lezioni</span></div>
-            <div class="stat"><strong>${watchedMin}</strong><span>minuti</span></div>
-            <div class="stat"><strong>${quizzes}</strong><span>quiz</span></div>
+            <div class="stat"><strong data-count="${done}">${done}</strong><span>lezioni</span></div>
+            <div class="stat"><strong data-count="${watchedMin}">${watchedMin}</strong><span>minuti</span></div>
+            <div class="stat"><strong data-count="${quizzes}">${quizzes}</strong><span>quiz</span></div>
           </div>
         </section>
 
         <section class="card badge-card ${completed ? '' : 'is-locked'} reveal" data-delay="160">
-          ${badgeArt()}
+          ${badge3d({ label: completed ? 'Open Badge sbloccato' : 'Open Badge, ancora da sbloccare' })}
           <h3 style="justify-content:center">${completed ? 'Badge sbloccato' : 'Open Badge'}</h3>
           ${completed
             ? html`<p>Corso completato il ${formatDate(user.courseCompletedAt)}. Il badge ti sarà inviato dall'Università.</p>
@@ -113,6 +114,9 @@ export async function dashboardView() {
     mount(root) {
       animateRings(root);
       observeReveals(root);
+      countUp(root);
+      const stops = [aurora($('.overview .aurora', root)), spinBadge($('.badge-stage', root))];
+      return () => stops.forEach((stop) => stop());
     },
   };
 }
