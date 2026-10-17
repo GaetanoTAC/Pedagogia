@@ -78,5 +78,7 @@ server/          API (Express) e database SQLite
   admin.js       area docenti, caricamento video, esportazione CSV
   course.js      regole di sblocco, verifica della visione, correzione dei quiz
 public/          interfaccia (HTML, CSS e JavaScript senza build)
+  assets/js/scene3d.js   scena 3D della home (dente e spazzolini)
+  assets/vendor/         three.js r128 (licenza MIT), incluso per non dipendere da CDN esterne
 content/         contenuti iniziali del corso
 ```

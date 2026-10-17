@@ -1,5 +1,6 @@
-import { html, icon, ring, badgeArt, badge3d, splitWords, formatDuration, animateRings, observeReveals, $ } from '../ui.js';
-import { aurora, tilt3d, spinBadge, countUp } from '../motion.js';
+import { html, icon, badge3d, splitWords, formatDuration, animateRings, observeReveals, prefersReducedMotion, $, $$ } from '../ui.js';
+import { aurora, spinBadge, countUp } from '../motion.js';
+import { createStoryScene } from '../scene3d.js';
 import { api } from '../api.js';
 
 const FAQ = [
@@ -15,7 +16,7 @@ const TOPICS = ['Anatomia del cavo orale', 'Placca e biofilm', 'Carie', 'Gengivi
   'Filo interdentale', 'Scovolini', 'Alimentazione', 'Erosione dentale', 'Fumo e alcol', 'Fluoro', 'Sigillature', 'Bocca e salute generale'];
 
 const syllabusItem = (l, i) => html`
-  <li class="syl-item reveal" data-stagger data-glow data-tilt>
+  <li class="syl-item reveal" data-stagger data-tilt>
     <span class="syl-num" aria-hidden="true">${String(i + 1).padStart(2, '0')}</span>
     <div>
       <h3><span class="sr-only">Lezione ${i + 1}: </span>${l.title}</h3>
@@ -34,94 +35,146 @@ const marquee = () => html`
     </div>
   </div>`;
 
+/**
+ * Capitoli guidati dallo scorrimento: la sezione è alta N schermate e il suo
+ * contenuto resta fermo mentre il dente 3D cambia posa capitolo dopo capitolo.
+ */
+function story(section) {
+  const n = Number(getComputedStyle(section).getPropertyValue('--n')) || 5;
+  const chapters = $$('.ch', section);
+  const dots = $$('.story-dot', section);
+  const bar = $('.story-progress span', section);
+  const canvas = $('.story-canvas', section);
+  const reduced = prefersReducedMotion();
+  let scene = null, disposed = false, active = 0, ticking = false;
+
+  const progress = () => {
+    const r = section.getBoundingClientRect();
+    const total = section.offsetHeight - innerHeight;
+    return total > 0 ? Math.min(1, Math.max(0, -r.top / total)) : 0;
+  };
+  const update = () => {
+    ticking = false;
+    const p = progress();
+    scene?.setProgress(p);
+    section.style.setProperty('--p', p.toFixed(4));
+    bar.style.transform = `scaleX(${p})`;
+    const idx = Math.round(p * (n - 1));
+    if (idx !== active) {
+      active = idx;
+      chapters.forEach((c) => c.classList.toggle('is-active', Number(c.dataset.ch) === idx));
+      dots.forEach((d, i) => d.classList.toggle('is-active', i === idx));
+    }
+  };
+  const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
+  const onResize = () => { scene?.resize(); update(); };
+  const onPointer = (e) => scene?.setPointer((e.clientX / innerWidth - 0.5) * 2, (e.clientY / innerHeight - 0.5) * 2);
+  dots.forEach((d) => d.addEventListener('click', () => {
+    const total = section.offsetHeight - innerHeight;
+    const top = section.getBoundingClientRect().top + scrollY;
+    scrollTo({ top: top + (Number(d.dataset.go) / (n - 1)) * total + 1, behavior: reduced ? 'auto' : 'smooth' });
+  }));
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', onResize);
+  addEventListener('pointermove', onPointer, { passive: true });
+
+  const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) scene?.start(); else scene?.stop(); });
+  createStoryScene(canvas, { reducedMotion: reduced })
+    .then((s) => {
+      if (disposed) { s?.dispose(); return; }
+      if (!s) { section.classList.add('story--nogl'); return; }
+      scene = s;
+      section.classList.add('story--ready');
+      update();
+      scene.setProgress(progress());
+      io.observe(section);
+    })
+    .catch(() => section.classList.add('story--nogl'));
+  update();
+
+  return () => {
+    disposed = true;
+    io.disconnect();
+    scene?.dispose();
+    removeEventListener('scroll', onScroll);
+    removeEventListener('resize', onResize);
+    removeEventListener('pointermove', onPointer);
+  };
+}
+
 export async function landingView({ user, section }) {
   let lessons = [];
   try { ({ lessons } = await api('/course/public')); } catch { /* il programma resta vuoto */ }
   const start = user ? '#/corso' : '#/registrati';
   const startLabel = user ? 'Vai al tuo percorso' : 'Inizia il corso';
-  const preview = lessons.slice(0, 4);
   const total = lessons.length || 10;
 
-  const view = html`
-  <section class="hero" id="hero">
-    <canvas class="aurora" aria-hidden="true"></canvas>
-    <div class="hero-noise" aria-hidden="true"></div>
-    <div class="container hero-grid">
-      <div class="hero-copy">
-        <span class="chip chip--glass hero-chip">${icon('sparkles')} Corso online gratuito · Open Badge</span>
-        <h1 class="split">${splitWords('Il tuo sorriso,')} <span class="grad-text">${splitWords('una lezione alla volta.', 3)}</span></h1>
-        <p class="hero-lead">Dieci videolezioni brevi per capire come prenderti cura della bocca: igiene quotidiana, prevenzione, alimentazione e stili di vita. Alla fine ricevi l'Open Badge dell'Università.</p>
-        <div class="hero-actions">
-          <a class="btn btn--primary btn--lg btn--shine" href="${start}">${startLabel} ${icon('arrow-right')}</a>
-          <a class="btn btn--on-dark btn--lg" href="#/programma">Scopri il programma</a>
-        </div>
-        <dl class="hero-stats">
-          <div><dt class="sr-only">Videolezioni</dt><dd><strong data-count="${total}">${total}</strong><span>videolezioni</span></dd></div>
-          <div><dt class="sr-only">Durata</dt><dd><strong data-count="20" data-prefix="~" data-suffix="′">~20′</strong><span>per lezione</span></dd></div>
-          <div><dt class="sr-only">Quiz</dt><dd><strong data-count="${total}">${total}</strong><span>quiz brevi</span></dd></div>
-          <div><dt class="sr-only">Attestato</dt><dd><strong>1</strong><span>Open Badge</span></dd></div>
-        </dl>
-      </div>
+  const chapters = [
+    { icon: 'sparkles', label: 'Inizio' },
+    { icon: 'play', label: 'Guarda' },
+    { icon: 'checks', label: 'Verifica' },
+    { icon: 'award', label: 'Badge' },
+    { icon: 'book', label: 'Lezioni' },
+  ];
 
-      <div class="hero-visual" aria-hidden="true">
-        <div class="scene">
-          <div class="mock">
-            <div class="mock-glass"></div>
-            <div class="mock-top layer" style="--z:40px">
-              ${ring(30, { size: 76, stroke: 7, label: '3/10' })}
-              <div><h3>Il tuo percorso</h3><p>Prossima tappa: lezione 4</p></div>
-            </div>
-            <ul class="mock-list">
-              ${preview.map((l, i) => html`
-                <li class="mock-item layer ${i < 3 ? 'is-done' : 'is-current'}" style="--z:${20 + i * 6}px">
-                  <span class="dot">${i < 3 ? icon('check') : i + 1}</span>
-                  <span class="grow">${l.title}</span>
-                  ${i === 3 ? html`<span class="mini"><span></span></span>` : ''}
-                </li>`)}
-            </ul>
-            <div class="float-quiz layer" style="--z:90px"><span class="check">${icon('check')}</span> Quiz superato · 4/4</div>
-            <div class="float-badge layer" style="--z:120px">${badgeArt({ decorative: true })}<strong>Open Badge</strong><span>Salute orale</span></div>
+  const view = html`
+  <section class="story" id="hero" style="--n:${chapters.length}">
+    <div class="story-sticky">
+      <div class="story-bg" aria-hidden="true"></div>
+      <div class="story-bigtext" aria-hidden="true"><span>SORRISO</span><span>IN SALUTE</span></div>
+      <canvas class="story-canvas" aria-hidden="true"></canvas>
+      <img class="story-fallback" src="assets/favicon.svg" alt="" aria-hidden="true">
+
+      <div class="container story-overlay">
+        <div class="ch ch--intro is-active" data-ch="0">
+          <div class="ch-intro-copy">
+            <span class="chip chip--glass hero-chip">${icon('sparkles')} Corso online gratuito · Open Badge</span>
+            <h1 class="split">${splitWords('Il tuo sorriso,')} <span class="grad-text">${splitWords('una lezione alla volta.', 3)}</span></h1>
+            <p class="hero-lead">Dieci videolezioni brevi per prenderti cura della bocca. Alla fine ricevi l'Open Badge dell'Università.</p>
+          </div>
+          <div class="hero-actions">
+            <a class="btn btn--primary btn--lg btn--shine" href="${start}">${startLabel} ${icon('arrow-right')}</a>
+            <a class="btn btn--glass btn--lg" href="#/programma">Il programma</a>
           </div>
         </div>
+
+        <article class="ch glass-panel" data-ch="1">
+          <span class="ch-step">Passo 1 di 3</span>
+          <div class="step-icon">${icon('play')}</div>
+          <h2>Guarda la videolezione</h2>
+          <p>Ogni lezione dura circa 20 minuti. Il sito salva i progressi da solo: chiudi quando vuoi e riprendi da dove eri rimasto.</p>
+        </article>
+        <article class="ch glass-panel" data-ch="2">
+          <span class="ch-step">Passo 2 di 3</span>
+          <div class="step-icon">${icon('checks')}</div>
+          <h2>Rispondi al quiz</h2>
+          <p>Poche domande per fissare i concetti chiave. Superato il quiz si sblocca la lezione successiva.</p>
+        </article>
+        <article class="ch glass-panel" data-ch="3">
+          <span class="ch-step">Passo 3 di 3</span>
+          <div class="step-icon">${icon('award')}</div>
+          <h2>Ottieni l'Open Badge</h2>
+          <p>Completate tutte le lezioni, l'Università ti rilascia un attestato digitale verificabile da aggiungere al CV.</p>
+        </article>
+        <article class="ch glass-panel" data-ch="4">
+          <span class="ch-step">Il programma</span>
+          <h2><span data-count="${total}">${total}</span> lezioni, una dopo l'altra</h2>
+          <p>Dall'anatomia della bocca al legame con la salute generale. Si sbloccano in ordine, al tuo ritmo.</p>
+          <a class="btn btn--glass" href="#/programma">Vedi tutte le lezioni ${icon('arrow-right')}</a>
+        </article>
       </div>
+
+      <nav class="story-nav" aria-label="Capitoli">
+        ${chapters.map((c, i) => html`<button type="button" class="story-dot ${i === 0 ? 'is-active' : ''}" data-go="${i}" aria-label="${c.label}">${icon(c.icon)}</button>`)}
+      </nav>
+      <div class="story-progress" aria-hidden="true"><span></span></div>
     </div>
-    <a class="scroll-hint" href="#/come-funziona" aria-label="Scorri a come funziona"><span></span></a>
   </section>
 
   ${marquee()}
 
-  <section class="section" id="come-funziona">
-    <div class="container">
-      <div class="section-head section-head--center reveal">
-        <span class="eyebrow">Come funziona</span>
-        <h2>Tre passi, al tuo ritmo</h2>
-        <p>Nessun orario da rispettare: entri quando vuoi e riprendi esattamente da dove avevi lasciato.</p>
-      </div>
-      <div class="steps reveal">
-        <div class="steps-line" aria-hidden="true"><span></span></div>
-        <article class="step" data-glow data-tilt style="--d:0">
-          <span class="step-num" aria-hidden="true">01</span>
-          <div class="step-icon">${icon('play')}</div>
-          <h3>Guarda la videolezione</h3>
-          <p>Ogni lezione dura circa 20 minuti. Il sito salva i tuoi progressi in automatico, anche se chiudi la pagina.</p>
-        </article>
-        <article class="step" data-glow data-tilt style="--d:1">
-          <span class="step-num" aria-hidden="true">02</span>
-          <div class="step-icon">${icon('checks')}</div>
-          <h3>Rispondi al quiz</h3>
-          <p>Poche domande per fissare i concetti chiave. Superato il quiz, si sblocca la lezione successiva.</p>
-        </article>
-        <article class="step" data-glow data-tilt style="--d:2">
-          <span class="step-num" aria-hidden="true">03</span>
-          <div class="step-icon">${icon('award')}</div>
-          <h3>Ottieni l'Open Badge</h3>
-          <p>Completate tutte le lezioni, l'Università ti rilascia un attestato digitale verificabile da aggiungere al CV.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
   <section class="section section--programma" id="programma">
+    <canvas class="aurora aurora--soft" aria-hidden="true"></canvas>
     <div class="container">
       <div class="section-head reveal">
         <span class="eyebrow">Il programma</span>
@@ -188,8 +241,8 @@ export async function landingView({ user, section }) {
       countUp(root);
       const stops = [
         ...[...root.querySelectorAll('canvas.aurora')].map(aurora),
-        tilt3d($('.mock', root), { max: 9, area: $('#hero', root) }),
         spinBadge($('.badge-stage', root)),
+        story($('.story', root)),
       ];
       if (section) $(`#${section}`, root)?.scrollIntoView({ block: 'start' });
       return () => stops.forEach((stop) => stop?.());

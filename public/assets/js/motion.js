@@ -169,6 +169,11 @@ export function countUp(root = document) {
 function initPointerEffects() {
   if (!finePointer() || prefersReducedMotion()) return;
   document.addEventListener('pointermove', (e) => {
+    const glass = e.target.closest?.('.glass-panel, .btn--glass, .story-dot, .header-inner');
+    if (glass) {
+      const r = glass.getBoundingClientRect();
+      glass.style.setProperty('--gx', `${((e.clientX - r.left) / r.width) * 100}%`);
+    }
     const card = e.target.closest?.('[data-glow]');
     if (!card) return;
     const r = card.getBoundingClientRect();

@@ -781,6 +781,103 @@ a.lesson-card:hover { border-color: var(--blue-200); box-shadow: var(--shadow); 
 .overview .aurora { opacity: .8; }
 
 /* =========================================================
+   Liquid Glass
+   Vetro traslucido con riflessi: sfocatura e saturazione di ciò che sta dietro,
+   bordo luminoso in alto e una luce speculare che segue il puntatore.
+   ========================================================= */
+.glass-panel, .btn--glass, .btn--on-dark, .story-dot, .chip--glass, .is-dark .header-inner {
+  position: relative; isolation: isolate; color: #fff;
+  background: linear-gradient(135deg, rgba(255,255,255,.20) 0%, rgba(255,255,255,.05) 45%, rgba(255,255,255,.12) 100%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255,255,255,.26);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55), inset 1px 0 0 rgba(255,255,255,.14), inset 0 -1px 0 rgba(255,255,255,.08),
+    0 18px 50px rgba(2, 8, 30, .35);
+}
+.glass-panel::after, .btn--glass::after, .story-dot::after, .is-dark .header-inner::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(120% 70% at var(--gx, 25%) -20%, rgba(255,255,255,.32), transparent 55%);
+}
+.btn--glass:hover, .btn--on-dark:hover { background: linear-gradient(135deg, rgba(255,255,255,.28), rgba(255,255,255,.10) 45%, rgba(255,255,255,.18)); color: #fff; }
+
+/* Barra di navigazione flottante */
+.site-header, .site-header.is-scrolled, .site-header.is-dark, .site-header.is-dark.is-scrolled {
+  background: transparent; border-bottom: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.header-inner { height: 56px; margin-top: 12px; padding: 0 8px 0 10px; border-radius: 999px;
+  background: rgba(255,255,255,.62); border: 1px solid rgba(255,255,255,.75);
+  -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: inset 0 1px 0 #fff, 0 10px 30px rgba(10, 26, 63, .10); position: relative; isolation: isolate; }
+.site-header { height: calc(var(--header-h) + 0px); align-items: flex-start; }
+.brand-mark { width: 38px; height: 38px; }
+.scroll-progress { top: 0; bottom: auto; }
+
+/* =========================================================
+   Storia 3D della home
+   ========================================================= */
+.story { position: relative; height: calc(var(--n) * 100vh); height: calc(var(--n) * 100svh);
+  margin-top: calc(var(--header-h) * -1); background: #050C21; }
+.story-sticky { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; isolation: isolate; color: var(--text-on-dark); }
+.story-bg { position: absolute; inset: 0; z-index: -3;
+  background:
+    radial-gradient(55% 55% at calc(50% + var(--p, 0) * 30%) 42%, hsl(calc(225 + var(--p, 0) * 25) 92% 60% / .95), transparent 70%),
+    radial-gradient(80% 60% at 50% 115%, hsl(calc(205 + var(--p, 0) * 45) 95% 58% / .55), transparent 62%),
+    linear-gradient(180deg, #0B1E5B 0%, #071233 60%, #050C21 100%); }
+.story-bigtext { position: absolute; inset: 0; z-index: -2; display: grid; place-content: center; text-align: center; pointer-events: none;
+  font: 800 clamp(3.6rem, 16vw, 15rem)/.86 var(--font-head); letter-spacing: -0.045em; white-space: nowrap;
+  color: rgba(255,255,255,.17); filter: blur(1.5px);
+  opacity: calc(1 - var(--p, 0) * 4.5); transform: translateY(-4%) scale(calc(1 + var(--p, 0) * 1.4)); }
+.story-bigtext span { display: block; }
+.story-canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; opacity: 0; transition: opacity 1.2s var(--ease-out); }
+.story--ready .story-canvas { opacity: 1; }
+.story-fallback { display: none; position: absolute; left: 50%; top: 44%; width: min(44vw, 260px); translate: -50% -50%; z-index: -1;
+  border-radius: 28%; filter: drop-shadow(0 30px 60px rgba(0,0,0,.45)); }
+.story--nogl .story-fallback { display: block; }
+.story--nogl .story-canvas { display: none; }
+
+.story-overlay { position: absolute; inset: 0; padding-top: var(--header-h); }
+.ch { position: absolute; opacity: 0; visibility: hidden; translate: 0 32px; filter: blur(8px);
+  transition: opacity .55s var(--ease-out), translate .7s var(--ease-out), filter .55s var(--ease-out), visibility 0s linear .7s; }
+.ch.is-active { opacity: 1; visibility: visible; translate: none; filter: none;
+  transition: opacity .7s var(--ease-out) .12s, translate .8s var(--ease-out) .12s, filter .7s var(--ease-out) .12s, visibility 0s; }
+
+.ch--intro { left: 0; right: 0; bottom: 64px; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 24px; }
+.ch-intro-copy { max-width: 620px; }
+.ch--intro h1 { color: #fff; font-size: clamp(2rem, 4.2vw, 3.4rem); margin: 18px 0 12px; }
+.ch--intro .hero-lead { margin: 0; font-size: 1.1rem; max-width: 520px; }
+.ch--intro .hero-actions { animation-delay: .9s; }
+
+.glass-panel.ch { left: 0; top: 50%; transform: translateY(-50%); width: min(440px, 100%); padding: 32px; border-radius: 28px; }
+.glass-panel h2 { color: #fff; font-size: clamp(1.6rem, 2.8vw, 2.3rem); margin: 0 0 10px; }
+.glass-panel p { color: #D3DEF6; margin: 0 0 4px; font-size: 1.04rem; }
+.glass-panel .btn { margin-top: 18px; }
+.glass-panel .step-icon { margin-bottom: 18px; }
+.ch-step { display: block; margin-bottom: 14px; font: 600 .78rem/1 var(--font-head); letter-spacing: .14em; text-transform: uppercase; color: var(--cyan-300); }
+
+.story-nav { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: 50%; translate: 0 -50%; display: grid; gap: 12px; }
+.container ~ .story-nav { right: max(24px, calc((100vw - 1180px) / 2 - 72px)); }
+.story-dot { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; padding: 0;
+  transition: transform .3s var(--ease-out), box-shadow .3s; }
+.story-dot .icon { width: 20px; height: 20px; opacity: .8; }
+.story-dot:hover { transform: scale(1.08); }
+.story-dot.is-active { background: var(--grad-brand); border-color: rgba(255,255,255,.5); box-shadow: 0 0 0 6px rgba(56,189,248,.18), 0 10px 30px rgba(37,99,235,.5); }
+.story-dot.is-active .icon { opacity: 1; }
+.story-progress { position: absolute; left: 50%; bottom: 26px; translate: -50% 0; width: min(240px, 40%); height: 3px; border-radius: 3px; background: rgba(255,255,255,.16); overflow: hidden; }
+.story-progress span { display: block; height: 100%; background: linear-gradient(90deg, #60A5FA, #67E8F9); transform: scaleX(0); transform-origin: 0 50%; }
+
+/* Programma su fondo scuro, schede in vetro */
+.section--programma { position: relative; isolation: isolate; overflow: hidden; border: 0; color: var(--text-on-dark);
+  background: linear-gradient(180deg, #050C21 0%, #0A1A3F 55%, #0B1E5B 100%); }
+.section--programma h2 { color: #fff; }
+.section--programma .section-head p { color: var(--text-on-dark-muted); }
+.section--programma .eyebrow { color: var(--sky-400); }
+.section--programma .syl-item { background: linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.04));
+  border: 1px solid rgba(255,255,255,.16); -webkit-backdrop-filter: blur(16px) saturate(160%); backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 12px 30px rgba(2,8,30,.25); }
+.section--programma .syl-item:hover { border-color: rgba(147,197,253,.5); box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 20px 40px rgba(2,8,30,.35); }
+.section--programma .syl-item h3 { color: #fff; }
+.section--programma .syl-item p, .section--programma .syl-meta { color: #C3D0EC; }
+.section--programma .syl-num { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); color: #BFDBFE; }
+
+/* =========================================================
    Responsive
    ========================================================= */
 @media (max-width: 1024px) {
@@ -801,6 +898,11 @@ a.lesson-card:hover { border-color: var(--blue-200); box-shadow: var(--shadow); 
   .form-row, .admin-grid { grid-template-columns: 1fr; }
   .float-quiz { left: 8px; bottom: -28px; }
   .steps-line { display: none; }
+  .story-nav { display: none; }
+  .ch--intro { bottom: 48px; }
+  .glass-panel.ch { top: auto; bottom: 48px; transform: none; padding: 24px; }
+  .story-bigtext { font-size: 19vw; place-content: start center; padding-top: 22vh; }
+  .header-inner { margin-top: 8px; height: 52px; }
   .hero-copy::before { inset: -20px -16px; background: rgba(5, 12, 33, .35); border-radius: 32px; filter: blur(24px); }
   .scroll-hint { display: none; }
   .float-badge { right: 8px; bottom: -48px; width: 128px; }
@@ -819,6 +921,7 @@ a.lesson-card:hover { border-color: var(--blue-200); box-shadow: var(--shadow); 
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
   .reveal { opacity: 1; translate: none; }
   *, *::before, *::after { animation-delay: 0s !important; transition-delay: 0s !important; }
+  .ch { transition: none !important; filter: none !important; translate: none !important; }
   .split .word, .hero-chip, .hero-lead, .hero-actions, .hero-stats, .scene, .steps .step, .step-icon {
     animation: none !important; opacity: 1 !important; translate: none !important; transform: none; filter: none; }
   .steps-line span { transform: scaleX(1); }
