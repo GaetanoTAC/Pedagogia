@@ -16,7 +16,7 @@ let renderSeq = 0;
 
 // Gradiente condiviso dagli anelli di avanzamento.
 document.body.insertAdjacentHTML('afterbegin', `<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#60A5FA"/><stop offset="1" stop-color="#2563EB"/></linearGradient></defs></svg>`);
+  <defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4DB8E2"/><stop offset="1" stop-color="#0A6BC2"/></linearGradient></defs></svg>`);
 
 const LANDING_SECTIONS = { programma: 'programma', faq: 'faq', 'come-funziona': 'come-funziona' };
 

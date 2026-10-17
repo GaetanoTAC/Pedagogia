@@ -110,9 +110,9 @@ export function badgeArt({ title = 'Salute Orale', ribbons = true, decorative = 
   const a11y = decorative ? 'aria-hidden="true"' : `role="img" aria-label="Open Badge del corso ${esc(title)}"`;
   return raw(`<svg viewBox="0 0 240 ${ribbons ? 290 : 232}" ${a11y}>
     <defs>
-      <linearGradient id="${id}a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1D4ED8"/><stop offset=".55" stop-color="#2563EB"/><stop offset="1" stop-color="#38BDF8"/></linearGradient>
-      <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DBEAFE"/><stop offset="1" stop-color="#60A5FA"/></linearGradient>
-      <linearGradient id="${id}c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1E3A8A"/><stop offset="1" stop-color="#0A1A3F"/></linearGradient>
+      <linearGradient id="${id}a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#004493"/><stop offset=".55" stop-color="#0A6BC2"/><stop offset="1" stop-color="#1AA3D2"/></linearGradient>
+      <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCF1FA"/><stop offset="1" stop-color="#4DB8E2"/></linearGradient>
+      <linearGradient id="${id}c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#003A80"/><stop offset="1" stop-color="#01204D"/></linearGradient>
     </defs>
     ${ribbons ? `<path d="M78 196 58 282l30-16 18 22 20-84z" fill="url(#${id}c)"/>
     <path d="M162 196l20 86-30-16-18 22-20-84z" fill="url(#${id}c)"/>` : ''}
@@ -120,10 +120,10 @@ export function badgeArt({ title = 'Salute Orale', ribbons = true, decorative = 
     <polygon points="120,22 202,69 202,163 120,210 38,163 38,69" fill="url(#${id}a)"/>
     <polygon points="120,22 202,69 202,163 120,210 38,163 38,69" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="2" stroke-dasharray="2 6"/>
     <path d="M97 70c-12 0-19 9-19 22 0 11 4 19 7 28 2 10 4 22 11 22 6 0 7-13 11-21 2-5 5-7 13-7s11 2 13 7c4 8 5 21 11 21 7 0 9-12 11-22 3-9 7-17 7-28 0-13-7-22-19-22-9 0-13 4-23 4s-14-4-23-4z" fill="#fff"/>
-    <path d="M150 84c4 3 6 8 6 14" stroke="#BFDBFE" stroke-width="5" stroke-linecap="round" fill="none"/>
-    <rect x="52" y="160" width="136" height="30" rx="15" fill="#0A1A3F" fill-opacity=".55"/>
+    <path d="M150 84c4 3 6 8 6 14" stroke="#B5E1F3" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <rect x="52" y="160" width="136" height="30" rx="15" fill="#01204D" fill-opacity=".55"/>
     <text x="120" y="180" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="700" font-size="13" letter-spacing="2" fill="#fff">${esc(title.toUpperCase())}</text>
-    <text x="120" y="54" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="600" font-size="10" letter-spacing="3" fill="#DBEAFE">OPEN BADGE</text>
+    <text x="120" y="54" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="600" font-size="10" letter-spacing="3" fill="#DCF1FA">OPEN BADGE</text>
   </svg>`);
 }
 
@@ -139,14 +139,14 @@ export function badge3d({ label = 'Open Badge Salute Orale: trascina per ruotarl
       <div class="coin-face coin-front">${badgeArt({ ribbons: false, decorative: true })}</div>
       <div class="coin-face coin-back">
         <svg viewBox="0 0 240 232" aria-hidden="true">
-          <defs><linearGradient id="cb${++badgeSeq}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1E3A8A"/><stop offset="1" stop-color="#2563EB"/></linearGradient></defs>
-          <polygon points="120,8 214,62 214,170 120,224 26,170 26,62" fill="#BFDBFE"/>
+          <defs><linearGradient id="cb${++badgeSeq}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#003A80"/><stop offset="1" stop-color="#0A6BC2"/></linearGradient></defs>
+          <polygon points="120,8 214,62 214,170 120,224 26,170 26,62" fill="#B5E1F3"/>
           <polygon points="120,22 202,69 202,163 120,210 38,163 38,69" fill="url(#cb${badgeSeq})"/>
           <text x="120" y="96" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="700" font-size="15" fill="#fff">Sorriso in Salute</text>
-          <text x="120" y="122" text-anchor="middle" font-family="Poppins, sans-serif" font-size="10" letter-spacing="1.5" fill="#BFDBFE">CORSO DI SALUTE ORALE</text>
-          <text x="120" y="146" text-anchor="middle" font-family="Poppins, sans-serif" font-size="10" fill="#DBEAFE">10 lezioni · 10 quiz</text>
-          <text x="120" y="172" text-anchor="middle" font-family="Poppins, sans-serif" font-size="8.5" letter-spacing="1.5" fill="#93C5FD">UNIVERSITÀ DEGLI STUDI</text>
-          <text x="120" y="185" text-anchor="middle" font-family="Poppins, sans-serif" font-size="8.5" letter-spacing="1.5" fill="#93C5FD">DI MILANO</text>
+          <text x="120" y="122" text-anchor="middle" font-family="Poppins, sans-serif" font-size="10" letter-spacing="1.5" fill="#B5E1F3">CORSO DI SALUTE ORALE</text>
+          <text x="120" y="146" text-anchor="middle" font-family="Poppins, sans-serif" font-size="10" fill="#DCF1FA">10 lezioni · 10 quiz</text>
+          <text x="120" y="172" text-anchor="middle" font-family="Poppins, sans-serif" font-size="8.5" letter-spacing="1.5" fill="#8FD0EC">UNIVERSITÀ DEGLI STUDI</text>
+          <text x="120" y="185" text-anchor="middle" font-family="Poppins, sans-serif" font-size="8.5" letter-spacing="1.5" fill="#8FD0EC">DI MILANO</text>
         </svg>
       </div>
     </div>
@@ -205,7 +205,7 @@ export function confetti(durationMs = 2600) {
   const dpr = window.devicePixelRatio || 1;
   const resize = () => { canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr; };
   resize();
-  const colors = ['#2563EB', '#38BDF8', '#93C5FD', '#1D4ED8', '#67E8F9', '#FFFFFF', '#10B981'];
+  const colors = ['#0A6BC2', '#1AA3D2', '#8FD0EC', '#004493', '#A9DDF2', '#FFFFFF', '#10B981'];
   const parts = Array.from({ length: 160 }, () => ({
     x: innerWidth / 2 + (Math.random() - 0.5) * 200,
     y: innerHeight * 0.35,

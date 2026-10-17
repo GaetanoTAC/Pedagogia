@@ -1,6 +1,6 @@
-import { html, icon, badge3d, splitWords, formatDuration, animateRings, observeReveals, prefersReducedMotion, $, $$ } from '../ui.js';
+import { html, icon, badge3d, splitWords, formatDuration, observeReveals, prefersReducedMotion, $ } from '../ui.js';
 import { aurora, spinBadge, countUp } from '../motion.js';
-import { createStoryScene } from '../scene3d.js';
+import { createWorld } from '../scene3d.js';
 import { api } from '../api.js';
 
 const FAQ = [
@@ -14,6 +14,12 @@ const FAQ = [
 
 const TOPICS = ['Anatomia del cavo orale', 'Placca e biofilm', 'Carie', 'Gengivite', 'Parodontite', 'Spazzolamento',
   'Filo interdentale', 'Scovolini', 'Alimentazione', 'Erosione dentale', 'Fumo e alcol', 'Fluoro', 'Sigillature', 'Bocca e salute generale'];
+
+const STEPS = [
+  ['play', 'Guarda la videolezione', 'Ogni lezione dura circa 20 minuti. Il sito salva i progressi da solo: chiudi quando vuoi e riprendi da dove eri rimasto.'],
+  ['checks', 'Rispondi al quiz', 'Poche domande per fissare i concetti chiave. Superato il quiz si sblocca la lezione successiva.'],
+  ['award', 'Ottieni l\'Open Badge', 'Completate tutte le lezioni, l\'Università ti rilascia un attestato digitale verificabile da aggiungere al CV.'],
+];
 
 const syllabusItem = (l, i) => html`
   <li class="syl-item reveal" data-stagger data-tilt>
@@ -35,68 +41,26 @@ const marquee = () => html`
     </div>
   </div>`;
 
-/**
- * Capitoli guidati dallo scorrimento: la sezione è alta N schermate e il suo
- * contenuto resta fermo mentre il dente 3D cambia posa capitolo dopo capitolo.
- */
-function story(section) {
-  const n = Number(getComputedStyle(section).getPropertyValue('--n')) || 5;
-  const chapters = $$('.ch', section);
-  const dots = $$('.story-dot', section);
-  const bar = $('.story-progress span', section);
-  const canvas = $('.story-canvas', section);
-  const reduced = prefersReducedMotion();
-  let scene = null, disposed = false, active = 0, ticking = false;
-
-  const progress = () => {
-    const r = section.getBoundingClientRect();
-    const total = section.offsetHeight - innerHeight;
-    return total > 0 ? Math.min(1, Math.max(0, -r.top / total)) : 0;
-  };
-  const update = () => {
-    ticking = false;
-    const p = progress();
-    scene?.setProgress(p);
-    section.style.setProperty('--p', p.toFixed(4));
-    bar.style.transform = `scaleX(${p})`;
-    const idx = Math.round(p * (n - 1));
-    if (idx !== active) {
-      active = idx;
-      chapters.forEach((c) => c.classList.toggle('is-active', Number(c.dataset.ch) === idx));
-      dots.forEach((d, i) => d.classList.toggle('is-active', i === idx));
-    }
-  };
-  const onScroll = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
-  const onResize = () => { scene?.resize(); update(); };
+/** Collega il mondo 3D alla pagina e lo ferma quando si esce dalla home. */
+function world(root) {
+  const canvas = $('.world-canvas', root);
+  let scene = null, disposed = false;
+  const onResize = () => scene?.resize();
   const onPointer = (e) => scene?.setPointer((e.clientX / innerWidth - 0.5) * 2, (e.clientY / innerHeight - 0.5) * 2);
-  dots.forEach((d) => d.addEventListener('click', () => {
-    const total = section.offsetHeight - innerHeight;
-    const top = section.getBoundingClientRect().top + scrollY;
-    scrollTo({ top: top + (Number(d.dataset.go) / (n - 1)) * total + 1, behavior: reduced ? 'auto' : 'smooth' });
-  }));
-  addEventListener('scroll', onScroll, { passive: true });
   addEventListener('resize', onResize);
   addEventListener('pointermove', onPointer, { passive: true });
-
-  const io = new IntersectionObserver(([e]) => { if (e.isIntersecting) scene?.start(); else scene?.stop(); });
-  createStoryScene(canvas, { reducedMotion: reduced })
+  createWorld(canvas, root, { reducedMotion: prefersReducedMotion() })
     .then((s) => {
       if (disposed) { s?.dispose(); return; }
-      if (!s) { section.classList.add('story--nogl'); return; }
+      if (!s) { root.classList.add('no-webgl'); return; }
       scene = s;
-      section.classList.add('story--ready');
-      update();
-      scene.setProgress(progress());
-      io.observe(section);
+      root.classList.add('world-ready');
+      scene.start();
     })
-    .catch(() => section.classList.add('story--nogl'));
-  update();
-
+    .catch(() => root.classList.add('no-webgl'));
   return () => {
     disposed = true;
-    io.disconnect();
     scene?.dispose();
-    removeEventListener('scroll', onScroll);
     removeEventListener('resize', onResize);
     removeEventListener('pointermove', onPointer);
   };
@@ -109,77 +73,67 @@ export async function landingView({ user, section }) {
   const startLabel = user ? 'Vai al tuo percorso' : 'Inizia il corso';
   const total = lessons.length || 10;
 
-  const chapters = [
-    { icon: 'sparkles', label: 'Inizio' },
-    { icon: 'play', label: 'Guarda' },
-    { icon: 'checks', label: 'Verifica' },
-    { icon: 'award', label: 'Badge' },
-    { icon: 'book', label: 'Lezioni' },
-  ];
-
   const view = html`
-  <section class="story" id="hero" style="--n:${chapters.length}">
-    <div class="story-sticky">
-      <div class="story-bg" aria-hidden="true"></div>
-      <div class="story-bigtext" aria-hidden="true"><span>SORRISO</span><span>IN SALUTE</span></div>
-      <canvas class="story-canvas" aria-hidden="true"></canvas>
-      <img class="story-fallback" src="assets/favicon.svg" alt="" aria-hidden="true">
+  <div class="landing">
+  <canvas class="world-canvas" aria-hidden="true"></canvas>
 
-      <div class="container story-overlay">
-        <div class="ch ch--intro is-active" data-ch="0">
-          <div class="ch-intro-copy">
-            <span class="chip chip--glass hero-chip">${icon('sparkles')} Corso online gratuito · Open Badge</span>
-            <h1 class="split">${splitWords('Il tuo sorriso,')} <span class="grad-text">${splitWords('una lezione alla volta.', 3)}</span></h1>
-            <p class="hero-lead">Dieci videolezioni brevi per prenderti cura della bocca. Alla fine ricevi l'Open Badge dell'Università.</p>
-          </div>
-          <div class="hero-actions">
-            <a class="btn btn--primary btn--lg btn--shine" href="${start}">${startLabel} ${icon('arrow-right')}</a>
-            <a class="btn btn--glass btn--lg" href="#/programma">Il programma</a>
-          </div>
+  <section class="hero-w" id="hero">
+    <div class="hero-wave" aria-hidden="true"></div>
+    <div class="container hero-w-grid">
+      <div class="hero-w-copy">
+        <span class="aiso-chip glass-light">Un'iniziativa di <img src="/assets/aiso-logo.png" alt="AISO Milano Statale, Associazione Italiana Studenti di Odontoiatria"></span>
+        <h1 class="split">${splitWords('Il tuo sorriso,')} <span class="grad-text">${splitWords('una lezione alla volta.', 3)}</span></h1>
+        <p class="hero-lead">Dieci videolezioni brevi per capire come prenderti cura della bocca: igiene quotidiana, prevenzione, alimentazione e stili di vita. Alla fine ricevi l'Open Badge dell'Università.</p>
+        <div class="hero-actions">
+          <a class="btn btn--primary btn--lg btn--shine" href="${start}">${startLabel} ${icon('arrow-right')}</a>
+          <a class="btn btn--secondary btn--lg" href="#/programma">Il programma</a>
         </div>
-
-        <article class="ch glass-panel" data-ch="1">
-          <span class="ch-step">Passo 1 di 3</span>
-          <div class="step-icon">${icon('play')}</div>
-          <h2>Guarda la videolezione</h2>
-          <p>Ogni lezione dura circa 20 minuti. Il sito salva i progressi da solo: chiudi quando vuoi e riprendi da dove eri rimasto.</p>
-        </article>
-        <article class="ch glass-panel" data-ch="2">
-          <span class="ch-step">Passo 2 di 3</span>
-          <div class="step-icon">${icon('checks')}</div>
-          <h2>Rispondi al quiz</h2>
-          <p>Poche domande per fissare i concetti chiave. Superato il quiz si sblocca la lezione successiva.</p>
-        </article>
-        <article class="ch glass-panel" data-ch="3">
-          <span class="ch-step">Passo 3 di 3</span>
-          <div class="step-icon">${icon('award')}</div>
-          <h2>Ottieni l'Open Badge</h2>
-          <p>Completate tutte le lezioni, l'Università ti rilascia un attestato digitale verificabile da aggiungere al CV.</p>
-        </article>
-        <article class="ch glass-panel" data-ch="4">
-          <span class="ch-step">Il programma</span>
-          <h2><span data-count="${total}">${total}</span> lezioni, una dopo l'altra</h2>
-          <p>Dall'anatomia della bocca al legame con la salute generale. Si sbloccano in ordine, al tuo ritmo.</p>
-          <a class="btn btn--glass" href="#/programma">Vedi tutte le lezioni ${icon('arrow-right')}</a>
-        </article>
+        <dl class="hero-stats">
+          <div><dt class="sr-only">Videolezioni</dt><dd><strong data-count="${total}">${total}</strong><span>videolezioni</span></dd></div>
+          <div><dt class="sr-only">Durata</dt><dd><strong data-count="20" data-prefix="~" data-suffix="′">~20′</strong><span>per lezione</span></dd></div>
+          <div><dt class="sr-only">Quiz</dt><dd><strong data-count="${total}">${total}</strong><span>quiz brevi</span></dd></div>
+          <div><dt class="sr-only">Attestato</dt><dd><strong>1</strong><span>Open Badge</span></dd></div>
+        </dl>
       </div>
-
-      <nav class="story-nav" aria-label="Capitoli">
-        ${chapters.map((c, i) => html`<button type="button" class="story-dot ${i === 0 ? 'is-active' : ''}" data-go="${i}" aria-label="${c.label}">${icon(c.icon)}</button>`)}
-      </nav>
-      <div class="story-progress" aria-hidden="true"><span></span></div>
+      <div class="slot slot--molar" data-slot="molar" aria-hidden="true">
+        <img class="slot-fallback" src="/assets/favicon.svg" alt="">
+      </div>
     </div>
   </section>
 
   ${marquee()}
 
-  <section class="section section--programma" id="programma">
-    <canvas class="aurora aurora--soft" aria-hidden="true"></canvas>
+  <section class="section steps-w" id="come-funziona">
     <div class="container">
       <div class="section-head reveal">
-        <span class="eyebrow">Il programma</span>
-        <h2>Dieci lezioni per una bocca in salute</h2>
-        <p>Dalle basi di anatomia fino al legame tra salute orale e salute generale. Le lezioni si sbloccano in ordine.</p>
+        <span class="eyebrow">Come funziona</span>
+        <h2>Tre passi, al tuo ritmo</h2>
+        <p>Nessun orario da rispettare: entri quando vuoi e riprendi da dove avevi lasciato.</p>
+      </div>
+      <div class="steps-w-grid">
+        <ol class="steps-w-list" data-slot-progress="steps">
+          ${STEPS.map(([ic, title, text], i) => html`
+            <li class="step-w glass-light reveal">
+              <span class="step-w-num">Passo ${i + 1} di 3</span>
+              <div class="step-icon">${icon(ic)}</div>
+              <h3>${title}</h3>
+              <p>${text}</p>
+            </li>`)}
+        </ol>
+        <div class="steps-w-stage" aria-hidden="true"><div class="slot slot--brush" data-slot="brush"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section programma-w" id="programma">
+    <div class="container">
+      <div class="programma-w-head">
+        <div class="section-head reveal">
+          <span class="eyebrow">Il programma</span>
+          <h2>Dieci lezioni per una bocca in salute</h2>
+          <p>Dall'anatomia del cavo orale fino al legame tra salute della bocca e salute generale. Le lezioni si sbloccano in ordine, una dopo l'altra.</p>
+        </div>
+        <div class="slot slot--arch" data-slot="arch" aria-hidden="true"></div>
       </div>
       <ol class="syllabus">
         ${lessons.map(syllabusItem)}
@@ -203,7 +157,7 @@ export async function landingView({ user, section }) {
           <li><span class="fi">${icon('share')}</span><div><strong>Condivisibile</strong><span>Aggiungilo al CV, al profilo professionale o al tuo portfolio.</span></div></li>
           <li><span class="fi">${icon('cap')}</span><div><strong>Rilasciato dall'Università</strong><span>Lo ricevi all'email istituzionale dopo aver completato il corso.</span></div></li>
         </ul>
-        <a class="btn btn--primary btn--lg btn--shine" href="${start}">${startLabel} ${icon('arrow-right')}</a>
+        <a class="btn btn--light btn--lg btn--shine" href="${start}">${startLabel} ${icon('arrow-right')}</a>
       </div>
     </div>
   </section>
@@ -230,19 +184,19 @@ export async function landingView({ user, section }) {
         <a class="btn btn--lg btn--shine" href="${start}">${startLabel} ${icon('arrow-right')}</a>
       </div>
     </div>
-  </section>`;
+  </section>
+  </div>`;
 
   return {
     view,
-    dark: true,
     mount(root) {
-      animateRings(root);
       observeReveals(root);
       countUp(root);
+      const landing = $('.landing', root);
       const stops = [
         ...[...root.querySelectorAll('canvas.aurora')].map(aurora),
         spinBadge($('.badge-stage', root)),
-        story($('.story', root)),
+        world(landing),
       ];
       if (section) $(`#${section}`, root)?.scrollIntoView({ block: 'start' });
       return () => stops.forEach((stop) => stop?.());

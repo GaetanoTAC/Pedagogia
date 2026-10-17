@@ -8,10 +8,10 @@ const finePointer = () => window.matchMedia('(hover: hover) and (pointer: fine)'
 export function aurora(canvas) {
   const ctx = canvas.getContext('2d');
   const blobs = [
-    { c: [37, 99, 235], r: 0.55, x: 0.15, y: 0.2, sx: 0.00011, sy: 0.00017, p: 0 },
-    { c: [56, 189, 248], r: 0.45, x: 0.85, y: 0.15, sx: 0.00015, sy: 0.00009, p: 2 },
-    { c: [99, 102, 241], r: 0.5, x: 0.55, y: 0.95, sx: 0.00008, sy: 0.00013, p: 4 },
-    { c: [14, 165, 233], r: 0.35, x: 0.35, y: 0.6, sx: 0.00019, sy: 0.00012, p: 1 },
+    { c: [0, 68, 147], r: 0.55, x: 0.15, y: 0.2, sx: 0.00011, sy: 0.00017, p: 0 },
+    { c: [26, 163, 210], r: 0.45, x: 0.85, y: 0.15, sx: 0.00015, sy: 0.00009, p: 2 },
+    { c: [21, 144, 201], r: 0.5, x: 0.55, y: 0.95, sx: 0.00008, sy: 0.00013, p: 4 },
+    { c: [26, 163, 210], r: 0.35, x: 0.35, y: 0.6, sx: 0.00019, sy: 0.00012, p: 1 },
   ];
   let raf = 0, visible = true, w = 0, h = 0;
   const pointer = { x: 0.5, y: 0.4, tx: 0.5, ty: 0.4 };
@@ -169,7 +169,7 @@ export function countUp(root = document) {
 function initPointerEffects() {
   if (!finePointer() || prefersReducedMotion()) return;
   document.addEventListener('pointermove', (e) => {
-    const glass = e.target.closest?.('.glass-panel, .btn--glass, .story-dot, .header-inner');
+    const glass = e.target.closest?.('.glass-panel, .glass-light, .btn--glass, .header-inner');
     if (glass) {
       const r = glass.getBoundingClientRect();
       glass.style.setProperty('--gx', `${((e.clientX - r.left) / r.width) * 100}%`);

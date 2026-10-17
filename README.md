@@ -1,5 +1,7 @@
 # Sorriso in Salute
 
+Un'iniziativa di AISO Milano Statale (Associazione Italiana Studenti di Odontoiatria).
+
 Mini-corso online sulla salute orale per gli studenti dell'Università degli Studi di Milano.
 
 - **10 videolezioni** che si sbloccano in ordine.
@@ -78,7 +80,9 @@ server/          API (Express) e database SQLite
   admin.js       area docenti, caricamento video, esportazione CSV
   course.js      regole di sblocco, verifica della visione, correzione dei quiz
 public/          interfaccia (HTML, CSS e JavaScript senza build)
-  assets/js/scene3d.js   scena 3D della home (dente e spazzolini)
+  assets/js/scene3d.js   mondo 3D della home (dente, spazzolino, arcata)
+  assets/models/         modelli 3D generati da tools/build_models.py
   assets/vendor/         three.js r128 (licenza MIT), incluso per non dipendere da CDN esterne
 content/         contenuti iniziali del corso
+tools/           script per rigenerare i modelli 3D (Python: numpy, scipy, scikit-image)
 ```
