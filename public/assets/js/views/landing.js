@@ -83,13 +83,13 @@ export async function landingView({ user, section }) {
     <div class="hero-wave" aria-hidden="true"></div>
     <div class="container hero-w-grid">
       <div class="hero-w-copy">
-        <span class="aiso-chip glass-panel">Un'iniziativa di <img src="/assets/aiso-logo-white.png" alt="AISO Milano Statale, Associazione Italiana Studenti di Odontoiatria"></span>
+        <span class="aiso-chip glass-light">Un'iniziativa di <img src="/assets/aiso-logo.png" alt="AISO Milano Statale, Associazione Italiana Studenti di Odontoiatria"></span>
         <p class="hero-tagline">La salute orale inizia da te</p>
         <h1 class="split">${splitWords('Il tuo sorriso,')} <span class="grad-text">${splitWords('una lezione alla volta.', 3)}</span></h1>
         <p class="hero-lead">Dieci videolezioni brevi per capire come prenderti cura della bocca: igiene quotidiana, prevenzione, alimentazione e stili di vita. Alla fine ricevi l'Open Badge dell'Università.</p>
         <div class="hero-actions">
           <a class="btn btn--primary btn--lg btn--shine" href="${start}">${startLabel} ${icon('arrow-right')}</a>
-          <a class="btn btn--glass btn--lg" href="#/programma">Il programma</a>
+          <a class="btn btn--secondary btn--lg" href="#/programma">Il programma</a>
         </div>
         <dl class="hero-stats">
           <div><dt class="sr-only">Videolezioni</dt><dd><strong data-count="${total}">${total}</strong><span>videolezioni</span></dd></div>
@@ -116,7 +116,7 @@ export async function landingView({ user, section }) {
       <div class="steps-w-grid">
         <ol class="steps-w-list" data-slot-progress="steps">
           ${STEPS.map(([ic, title, text], i) => html`
-            <li class="step-w glass-panel reveal">
+            <li class="step-w glass-light reveal">
               <span class="step-w-num">Passo ${i + 1} di 3</span>
               <div class="step-icon">${icon(ic)}</div>
               <h3>${title}</h3>
@@ -192,7 +192,6 @@ export async function landingView({ user, section }) {
 
   return {
     view,
-    dark: true,
     mount(root) {
       observeReveals(root);
       countUp(root);

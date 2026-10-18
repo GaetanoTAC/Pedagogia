@@ -67,6 +67,7 @@ const HOLO_VERT = /* glsl */`
 
 const HOLO_FRAG = /* glsl */`
   uniform vec3 uColor;
+  uniform vec3 uEdge;
   uniform float uOpacity;
   uniform float uDensity;
   uniform float uMeridians;
@@ -75,6 +76,7 @@ const HOLO_FRAG = /* glsl */`
   uniform float uReflect;
   uniform float uFloor;
   uniform float uFadeLen;
+  uniform float uGumLevel;
   varying vec3 vLocal;
   varying vec3 vNormal;
   varying vec3 vView;
@@ -94,22 +96,28 @@ const HOLO_FRAG = /* glsl */`
     float line = max(ring, merid * 0.85);
 
     float facing = abs(dot(normalize(vNormal), normalize(vView)));
-    float fres = pow(1.0 - facing, 2.2);
+    float fres = pow(1.0 - facing, 2.0);
     float scan = 0.5 + 0.5 * sin(vWorldY * 5.0 - uTime * 1.6);
 
-    float a = (0.05 + line * 0.5 + fres * 0.75) * (0.85 + 0.15 * scan);
-    if (uReflect > 0.5) a *= smoothstep(uFloor - uFadeLen, uFloor, vWorldY) * 0.32;
-    a *= uOpacity;
-    vec3 col = mix(uColor, vec3(0.86, 0.97, 1.0), clamp(fres * 0.7 + line * 0.25, 0.0, 1.0));
-    gl_FragColor = vec4(col * a, a);
+    vec3 fill = vec3(0.90, 0.97, 1.0);
+    vec3 col = mix(fill, uColor, clamp(line * 1.2, 0.0, 1.0));
+    col = mix(col, uEdge, clamp(fres * 1.15, 0.0, 1.0));
+    float a = (0.16 + line * 0.42 + fres * 0.55) * (0.92 + 0.08 * scan);
+    // Gengive (sotto il colletto) più tenui e azzurre, per distinguerle dai denti.
+    float gum = smoothstep(uGumLevel + 0.04, uGumLevel - 0.04, vLocal.y);
+    col = mix(col, vec3(0.55, 0.80, 0.94), gum * 0.55);
+    a *= mix(1.0, 0.7, gum);
+    if (uReflect > 0.5) a *= smoothstep(uFloor - uFadeLen, uFloor, vWorldY) * 0.3;
+    gl_FragColor = vec4(col, clamp(a * uOpacity, 0.0, 1.0));
   }`;
 
-function holoMaterial(THREE, { color = 0x4cc3ff, density = 24, meridians = 48, axisX = false, opacity = 1 } = {}) {
+function holoMaterial(THREE, { color = 0x1aa3d2, edge = 0x0a5bb5, density = 24, meridians = 48, axisX = false, opacity = 1, xray = true, gumLevel = -99 } = {}) {
   const mat = new THREE.ShaderMaterial({
     vertexShader: HOLO_VERT,
     fragmentShader: HOLO_FRAG,
     uniforms: {
       uColor: { value: new THREE.Color(color) },
+      uEdge: { value: new THREE.Color(edge) },
       uOpacity: { value: opacity },
       uDensity: { value: density },
       uMeridians: { value: meridians },
@@ -118,12 +126,11 @@ function holoMaterial(THREE, { color = 0x4cc3ff, density = 24, meridians = 48, a
       uReflect: { value: 0 },
       uFloor: { value: 0 },
       uFadeLen: { value: 1 },
+      uGumLevel: { value: gumLevel },
     },
     transparent: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending,
-    premultipliedAlpha: true,
+    depthWrite: !xray,
+    side: xray ? THREE.DoubleSide : THREE.FrontSide,
   });
   mat.extensions = { derivatives: true };
   return mat;
@@ -139,16 +146,16 @@ const GRID_FRAG = /* glsl */`
     float line = 1.0 - min(min(d.x, d.y), 1.0);
     vec2 c = vUv - 0.5;
     float fade = smoothstep(0.5, 0.12, max(abs(c.x), abs(c.y)) * 0.6 + length(c) * 0.55);
-    float a = (line * 0.55 + 0.06) * fade * uOpacity;
-    gl_FragColor = vec4(uColor * a, a);
+    float a = (line * 0.5 + 0.05) * fade * uOpacity;
+    gl_FragColor = vec4(uColor, a);
   }`;
 
 function gridMaterial(THREE) {
   const mat = new THREE.ShaderMaterial({
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: GRID_FRAG,
-    uniforms: { uColor: { value: new THREE.Color(0x4cc3ff) }, uOpacity: { value: 0.9 } },
-    transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, premultipliedAlpha: true,
+    uniforms: { uColor: { value: new THREE.Color(0x1aa3d2) }, uOpacity: { value: 0.8 } },
+    transparent: true, depthWrite: false, side: THREE.DoubleSide,
   });
   mat.extensions = { derivatives: true };
   return mat;
@@ -216,7 +223,7 @@ function centerGeometry(geo) {
 function makeBrush(THREE, handleGeo, gripGeo) {
   const inner = new THREE.Group();
   inner.add(new THREE.Mesh(handleGeo, holoMaterial(THREE, { density: 20, meridians: 22, axisX: true })));
-  inner.add(new THREE.Mesh(gripGeo, holoMaterial(THREE, { color: 0x8fe0ff, density: 34, meridians: 22, axisX: true, opacity: 0.9 })));
+  inner.add(new THREE.Mesh(gripGeo, holoMaterial(THREE, { color: 0x4db8e2, density: 34, meridians: 22, axisX: true, opacity: 0.9 })));
 
   // Ciuffi di setole disposti sull'ovale della testina.
   const profile = [];
@@ -235,7 +242,7 @@ function makeBrush(THREE, handleGeo, gripGeo) {
       if (ex * ex + ey * ey <= 1) spots.push([x, y]);
     }
   }
-  const tufts = new THREE.InstancedMesh(tuftGeo, holoMaterial(THREE, { color: 0xa9e7ff, density: 60, meridians: 6, opacity: 0.8 }), spots.length);
+  const tufts = new THREE.InstancedMesh(tuftGeo, holoMaterial(THREE, { color: 0x4db8e2, density: 60, meridians: 6, opacity: 0.7 }), spots.length);
   const m = new THREE.Matrix4();
   spots.forEach(([x, y], k) => { m.makeTranslation(x, y, 0.1); tufts.setMatrixAt(k, m); });
   inner.add(tufts);
@@ -245,68 +252,25 @@ function makeBrush(THREE, handleGeo, gripGeo) {
   return group;
 }
 
-/** Bocca stilizzata: arcata inferiore e superiore (corone su gengive), che si aprono scorrendo. */
-function makeMouth(THREE, crowns) {
-  const order = ['molar', 'molar', 'premolar', 'premolar', 'canine', 'incisor', 'incisor'];
-  const widths = [0.6, 0.64, 0.44, 0.45, 0.47, 0.4, 0.5];
-  const side = order.map((t, i) => ({ t, w: widths[i] }));
-  const teeth = [...side, ...side.slice().reverse()];
-  const total = teeth.reduce((a, t) => a + t.w * 1.03, 0);
-  const span = (100 * Math.PI) / 180;
-  const pts = (A, B) => Array.from({ length: 41 }, (_, i) => {
-    const phi = -span + (2 * span * i) / 40;
-    return new THREE.Vector3(A * Math.sin(phi), 0, B * Math.cos(phi) - B * 0.35);
-  });
-  let curve = new THREE.CatmullRomCurve3(pts(1, 1.15));
-  const s = total / curve.getLength();
-  curve = new THREE.CatmullRomCurve3(pts(s, 1.15 * s));
-  const L = curve.getLength();
-
-  const toothMat = holoMaterial(THREE, { density: 30, meridians: 36, opacity: 0.72 });
-  const gumMat = holoMaterial(THREE, { color: 0x2e9be0, density: 22, meridians: 140, opacity: 0.75 });
-
-  const arch = () => {
-    const g = new THREE.Group();
-    let along = 0;
-    teeth.forEach(({ t, w }) => {
-      const u = (along + w * 0.515) / L;
-      along += w * 1.03;
-      const geo = crowns[t];
-      const bb = geo.boundingBox;
-      const mesh = new THREE.Mesh(geo, toothMat);
-      mesh.scale.setScalar(w / (bb.max.x - bb.min.x));
-      const p = curve.getPointAt(u), tan = curve.getTangentAt(u);
-      mesh.position.copy(p);
-      mesh.rotation.y = Math.atan2(-tan.z, tan.x);
-      g.add(mesh);
-    });
-    const gum = new THREE.Mesh(new THREE.TubeGeometry(curve, 140, 0.32, 20, false), gumMat);
-    gum.scale.y = 0.8;
-    gum.position.y = -0.12;
-    g.add(gum);
-    for (const end of [0, 1]) {
-      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.32, 20, 14), gumMat);
-      cap.position.copy(curve.getPointAt(end)).setY(-0.12);
-      cap.scale.y = 0.8;
-      g.add(cap);
-    }
-    return g;
-  };
-
-  const lower = arch();
-  const upper = arch();
-  upper.rotation.x = Math.PI;
-  upper.scale.set(1.04, 1, 1.04);
+/**
+ * Bocca: arcata inferiore (gengiva e corone fuse in un solo modello) e arcata superiore
+ * ottenuta specchiandola in verticale, così incisivi e molari restano allineati.
+ */
+function makeMouth(THREE, archGeo) {
+  const b = archGeo.boundingBox;
+  archGeo.translate(-(b.min.x + b.max.x) / 2, 0, -(b.min.z + b.max.z) / 2);
+  const mat = holoMaterial(THREE, { density: 30, meridians: 90, opacity: 0.95, xray: false, gumLevel: -0.02 });
+  const lower = new THREE.Mesh(archGeo, mat);
+  const upper = new THREE.Mesh(archGeo, mat);
+  upper.scale.set(1.04, -1, 1.04);
+  const hinge = new THREE.Group();
+  hinge.name = 'hinge';                  // cerniera sul retro dell'arcata: si apre come una bocca
+  hinge.position.set(0, 0.62, b.min.z - (b.min.z + b.max.z) / 2);
+  upper.position.set(0, 0, -hinge.position.z);
+  hinge.add(upper);
   const mouth = new THREE.Group();
-  mouth.add(lower, upper);
-  const box = new THREE.Box3().setFromObject(lower);
-  const c = box.getCenter(new THREE.Vector3());
-  lower.position.set(-c.x, 0, -c.z);
-  upper.position.set(-c.x * 1.04, 0.95, -c.z * 1.04);
-  const wrap = new THREE.Group();
-  wrap.add(mouth);
-  wrap.userData = { upper, openBase: 0.95 };
-  return wrap;
+  mouth.add(lower, hinge);
+  return { group: mouth, hinge };
 }
 
 /** Puntini luminosi a profondità diverse: scorrono a velocità diverse e danno il senso del movimento. */
@@ -324,8 +288,8 @@ function makeDust(THREE, count) {
   geo.setAttribute('size', new THREE.BufferAttribute(size, 1));
   const mat = new THREE.ShaderMaterial({
     vertexShader: `attribute float size; void main(){ vec4 mv = modelViewMatrix * vec4(position,1.0); gl_PointSize = size * (8.0 / -mv.z) * ${(Math.min(devicePixelRatio || 1, 2)).toFixed(1)}; gl_Position = projectionMatrix * mv; }`,
-    fragmentShader: 'void main(){ float d = length(gl_PointCoord - 0.5); float a = smoothstep(0.5, 0.0, d) * 0.55; gl_FragColor = vec4(vec3(0.55, 0.85, 1.0) * a, a); }',
-    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, premultipliedAlpha: true,
+    fragmentShader: 'void main(){ float d = length(gl_PointCoord - 0.5); float a = smoothstep(0.5, 0.0, d) * 0.4; gl_FragColor = vec4(0.1, 0.64, 0.82, a); }',
+    transparent: true, depthWrite: false,
   });
   return { points: new THREE.Points(geo, mat), data, pos };
 }
@@ -347,14 +311,9 @@ export async function createWorld(canvas, root, { reducedMotion = false } = {}) 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setClearColor(0x000000, 0);
 
-  const [molarGeo, handleGeo, gripGeo, cMolar, cPremolar, cCanine, cIncisor] = await Promise.all(
-    ['molar', 'brush-handle', 'brush-grip', 'crown-molar', 'crown-premolar', 'crown-canine', 'crown-incisor'].map((n) => loadModel(THREE, n)),
+  const [molarGeo, handleGeo, gripGeo, archGeo] = await Promise.all(
+    ['molar', 'brush-handle', 'brush-grip', 'arch'].map((n) => loadModel(THREE, n)),
   );
-  [cMolar, cPremolar, cCanine, cIncisor].forEach((g) => {
-    const b = g.boundingBox;
-    g.translate(-(b.min.x + b.max.x) / 2, 0, -(b.min.z + b.max.z) / 2);
-    g.computeBoundingBox();
-  });
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
@@ -364,8 +323,10 @@ export async function createWorld(canvas, root, { reducedMotion = false } = {}) 
   centerGeometry(molarGeo);
   const molar = exhibit(THREE, new THREE.Mesh(molarGeo, holoMaterial(THREE, { density: 26, meridians: 64 })), { floor: -1.5, gridSize: 3.4 });
   const brush = exhibit(THREE, makeBrush(THREE, handleGeo, gripGeo), { floor: -1.75, gridSize: 4.4 });
-  const mouth = makeMouth(THREE, { molar: cMolar, premolar: cPremolar, canine: cCanine, incisor: cIncisor });
-  const mouthEx = exhibit(THREE, mouth, { floor: -0.9, gridSize: 5 });
+  const mouth = makeMouth(THREE, archGeo);
+  const mouthEx = exhibit(THREE, mouth.group, { floor: -1.0, gridSize: 5.4 });
+  const hinges = [];                       // la cerniera dell'arcata e quella del suo riflesso
+  mouthEx.root.traverse((o) => { if (o.name === 'hinge') hinges.push(o); });
   scene.add(molar.root, brush.root, mouthEx.root);
 
   const dust = makeDust(THREE, 140);
@@ -457,12 +418,11 @@ export async function createWorld(canvas, root, { reducedMotion = false } = {}) 
       if (s.visible) {
         any = true;
         spin.arch += (s.t - spin.arch) * ease;
-        const open = clamp(0.5 - spin.arch, 0, 1.2);  // si apre mentre sale verso il centro
-        mouthEx.root.position.set(s.x, s.y - 0.3, 0);
-        mouthEx.root.scale.setScalar(s.size / (W < 700 ? 5.2 : 4.4));
-        mouth.userData.upper.position.y = mouth.userData.openBase + open * 1.1;
-        mouth.userData.upper.rotation.x = Math.PI + open * 0.35;
-        mouthEx.setRotation(0.12 + open * 0.35 + pointer.y * 0.08, spin.arch * -0.9 + Math.sin(time * 0.35) * 0.18 + pointer.x * 0.25, 0);
+        const open = clamp(0.35 - spin.arch, 0, 1);   // si apre mentre sale verso il centro
+        mouthEx.root.position.set(s.x, s.y - 0.2, 0);
+        mouthEx.root.scale.setScalar(s.size / (W < 700 ? 5.2 : 4.6));
+        hinges.forEach((h) => { h.rotation.x = -open * 0.7; });
+        mouthEx.setRotation(0.38 + open * 0.25 + pointer.y * 0.08, spin.arch * -0.9 + Math.sin(time * 0.35) * 0.18 + pointer.x * 0.25, 0);
       }
     }
 

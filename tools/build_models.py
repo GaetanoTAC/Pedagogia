@@ -81,35 +81,41 @@ def bent_root(x, y, z, pts, radii, k=0.08):
 
 # ---------- denti ----------
 
+def superellipsoid(x, y, z, c, r, n=2.6):
+    """Forma fra l'ellissoide e la scatola arrotondata (n più alto = più squadrata)."""
+    f = (np.abs((x - c[0]) / r[0]) ** n + np.abs((y - c[1]) / r[1]) ** n + np.abs((z - c[2]) / r[2]) ** n) ** (1 / n)
+    return (f - 1) * min(r)
+
+
 def molar_crown(x, y, z):
-    body = ellipsoid(x, y, z, (0, 0.32, 0), (0.64, 0.46, 0.55))
+    body = superellipsoid(x, y, z, (0, 0.42, 0), (0.58, 0.4, 0.52), 2.5)
     cusps = None
-    for sx in (-1, 1):
-        for sz in (-1, 1):
-            c = sphere(x, y, z, (0.27 * sx, 0.56, 0.22 * sz), 0.29)
-            cusps = c if cusps is None else smin(cusps, c, 0.07)
-    crown = smin(body, cusps, 0.2)
-    # Fossa centrale leggermente scavata
-    crown = smax(crown, -sphere(x, y, z, (0, 1.02, 0), 0.24), 0.12)
+    for sx, h in ((-1, 0.0), (1, -0.02)):
+        for sz, hz in ((1, 0.02), (-1, -0.02)):      # cuspidi vestibolari un po' più alte
+            c = sphere(x, y, z, (0.27 * sx, 0.7 + h + hz, 0.21 * sz), 0.25)
+            cusps = c if cusps is None else smin(cusps, c, 0.06)
+    crown = smin(body, cusps, 0.14)
     # Solchi occlusali a croce fra le cuspidi
-    groove_x = round_cone(x, y, z, (-0.42, 0.86, 0.0), (0.42, 0.86, 0.0), 0.05, 0.05)
-    groove_z = round_cone(x, y, z, (0.0, 0.86, -0.36), (0.0, 0.86, 0.36), 0.045, 0.045)
+    groove_x = round_cone(x, y, z, (-0.4, 0.88, 0.0), (0.4, 0.88, 0.0), 0.05, 0.05)
+    groove_z = round_cone(x, y, z, (0.0, 0.88, -0.34), (0.0, 0.88, 0.34), 0.045, 0.045)
     crown = smax(crown, -smin(groove_x, groove_z, 0.04), 0.035)
     return crown
 
 
+def flat_root(x, y, z, pts, radii, flat=0.62, k=0.08):
+    """Radice schiacciata in senso mesio-distale (stretta in x, larga in z)."""
+    return bent_root(x / flat, y, z, [(p[0] / flat, p[1], p[2]) for p in pts], radii, k) * flat
+
+
 def molar(x, y, z):
     crown = molar_crown(x, y, z)
-    # Colletto corto: le radici si separano subito sotto la corona.
-    neck = round_cone(x, y, z, (0, 0.18, 0), (0, -0.08, 0), 0.5, 0.44)
-    d = smin(crown, neck, 0.16)
-    roots = [
-        bent_root(x, y, z, [(-0.24, 0.0, 0.12), (-0.36, -0.7, 0.16), (-0.33, -1.42, 0.1)], [0.27, 0.18, 0.075]),
-        bent_root(x, y, z, [(0.24, 0.0, 0.12), (0.35, -0.7, 0.16), (0.3, -1.38, 0.12)], [0.26, 0.17, 0.075]),
-        bent_root(x, y, z, [(0.0, 0.0, -0.2), (0.03, -0.65, -0.36), (0.07, -1.3, -0.46)], [0.28, 0.18, 0.085]),
-    ]
-    for r in roots:
-        d = smin(d, r, 0.14)
+    # Colletto: restringimento netto sotto la corona, poi un tronco radicolare corto.
+    neck = superellipsoid(x, y, z, (0, 0.02, 0), (0.43, 0.2, 0.4), 2.2)
+    d = smin(crown, neck, 0.14)
+    mesial = flat_root(x, y, z, [(-0.25, -0.05, 0), (-0.3, -0.55, 0), (-0.22, -1.12, 0)], [0.36, 0.3, 0.14], flat=0.7)
+    distal = flat_root(x, y, z, [(0.25, -0.05, 0), (0.31, -0.53, 0), (0.25, -1.06, 0)], [0.35, 0.29, 0.14], flat=0.7)
+    d = smin(d, mesial, 0.12)
+    d = smin(d, distal, 0.12)
     return d
 
 
@@ -222,11 +228,78 @@ def write(name, verts, faces):
     print(f"{name}: {len(verts)} vertici, {len(faces)} triangoli, {size / 1024:.0f} KB")
 
 
+# ---------- arcata dentale (gengiva + corone in un unico modello) ----------
+
+ARCH_ORDER = ["molar", "molar", "premolar", "premolar", "canine", "incisor", "incisor"]
+ARCH_WIDTHS = [0.6, 0.64, 0.44, 0.45, 0.47, 0.4, 0.5]
+CROWN_WIDTH = {"molar": 1.16, "premolar": 0.8, "canine": 0.72, "incisor": 0.62}
+
+
+def arch_curve(n=2000):
+    """Curva a ferro di cavallo (vista dall'alto) lunga quanto i denti da ospitare."""
+    teeth = ARCH_ORDER + ARCH_ORDER[::-1]
+    widths = ARCH_WIDTHS + ARCH_WIDTHS[::-1]
+    total = sum(w * 1.03 for w in widths)
+    span = np.radians(100)
+    phi = np.linspace(-span, span, n)
+    def pts(A, B):
+        return np.stack([A * np.sin(phi), B * np.cos(phi) - B * 0.35], 1)
+    p = pts(1, 1.15)
+    s = total / np.sum(np.linalg.norm(np.diff(p, axis=0), axis=1))
+    p = pts(s, 1.15 * s)
+    seg = np.linalg.norm(np.diff(p, axis=0), axis=1)
+    cum = np.concatenate([[0], np.cumsum(seg)])
+    return p, cum, teeth, widths
+
+
+def build_arch(step=0.03):
+    from scipy.spatial import cKDTree
+    curve, cum, teeth, widths = arch_curve()
+    lo = np.array([curve[:, 0].min() - 0.6, -0.8, curve[:, 1].min() - 0.6])
+    hi = np.array([curve[:, 0].max() + 0.6, 0.85, curve[:, 1].max() + 0.6])
+    axes = [np.arange(lo[i], hi[i] + step, step) for i in range(3)]
+    X, Y, Z = np.meshgrid(*axes, indexing="ij")
+
+    # Gengiva: sezione ellittica attorno alla curva, con la base piatta.
+    tree = cKDTree(curve)
+    dist, _ = tree.query(np.stack([X.ravel(), Z.ravel()], 1))
+    dist = dist.reshape(X.shape)
+    # La gengiva arriva al colletto dei denti: le corone restano tutte visibili.
+    gum = (length(dist / 0.38, (Y + 0.46) / 0.44) - 1) * 0.38
+    gum = smax(gum, -0.72 - Y, 0.08)
+    D = gum
+
+    # Corone: ognuna nel proprio sistema di riferimento (x lungo l'arcata, z verso l'esterno).
+    along = 0.0
+    centre = curve.mean(0)
+    for t, w in zip(teeth, widths):
+        u = along + w * 0.515
+        along += w * 1.03
+        i = np.searchsorted(cum, u)
+        c = curve[min(i, len(curve) - 1)]
+        tan = curve[min(i + 1, len(curve) - 1)] - curve[max(i - 1, 0)]
+        tan /= np.linalg.norm(tan)
+        nrm = np.array([tan[1], -tan[0]])
+        if np.dot(nrm, c - centre) < 0:
+            nrm = -nrm
+        sc = w / CROWN_WIDTH[t]
+        r = 0.75 * max(1.0, sc)
+        mask = (np.abs(X - c[0]) < r) & (np.abs(Z - c[1]) < r) & (Y > -0.3)
+        px, pz = X[mask] - c[0], Z[mask] - c[1]
+        lx = px * tan[0] + pz * tan[1]
+        lz = px * nrm[0] + pz * nrm[1]
+        fn = {"molar": crown_molar, "premolar": crown_premolar, "canine": crown_canine, "incisor": crown_incisor}[t]
+        crown = fn(lx / sc, (Y[mask] + 0.04) / sc, lz / sc) * sc
+        D[mask] = smin(D[mask], crown, 0.05)
+
+    verts, faces, _, _ = marching_cubes(D.astype(np.float32), 0.0, spacing=(step, step, step))
+    verts += lo
+    verts = taubin(verts, faces, 5)
+    write("arch", verts, faces)
+
+
 if __name__ == "__main__":
-    build("molar", molar, (-0.85, -1.62, -0.8), (0.85, 1.08, 0.8), 0.022)
-    build("crown-molar", crown_molar, (-0.75, -0.1, -0.7), (0.75, 1.0, 0.7), 0.03)
-    build("crown-premolar", crown_premolar, (-0.55, -0.1, -0.6), (0.55, 0.95, 0.6), 0.03)
-    build("crown-canine", crown_canine, (-0.5, -0.1, -0.5), (0.5, 0.95, 0.5), 0.03)
-    build("crown-incisor", crown_incisor, (-0.55, -0.1, -0.3), (0.55, 0.95, 0.3), 0.025)
+    build("molar", molar, (-0.8, -1.35, -0.75), (0.8, 1.05, 0.75), 0.02)
     build("brush-handle", brush_handle, (-0.15, -0.3, -0.25), (3.55, 0.3, 0.3), 0.0125, smooth_iter=4)
     build("brush-grip", brush_grip, (1.45, -0.22, 0.0), (2.4, 0.22, 0.22), 0.012, smooth_iter=4)
+    build_arch()
