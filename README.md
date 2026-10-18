@@ -1,4 +1,6 @@
-# Sorriso in Salute
+# Smile Up
+
+*La salute orale inizia da te.*
 
 Un'iniziativa di AISO Milano Statale (Associazione Italiana Studenti di Odontoiatria).
 
@@ -57,9 +59,9 @@ Al primo avvio il database viene creato in `data/` con le 10 lezioni e i quiz pr
 Il sito è un unico processo Node, da mettere dietro un reverse proxy HTTPS (ad esempio nginx). Con Docker:
 
 ```bash
-docker build -t sorriso-in-salute .
+docker build -t smile-up .
 docker run -d -p 3000:3000 -v sorriso-data:/app/data \
-  -e ADMIN_EMAILS=docente@unimi.it -e COOKIE_SECURE=1 sorriso-in-salute
+  -e ADMIN_EMAILS=docente@unimi.it -e COOKIE_SECURE=1 smile-up
 ```
 
 Con 10 video da 20 minuti servono alcuni GB di spazio per `data/uploads`. Il caricamento accetta file fino a 4 GB. Se usi nginx, alza `client_max_body_size`.

@@ -1,5 +1,5 @@
 /* =========================================================
-   Sorriso in Salute — design system (palette blu)
+   Smile Up — design system (palette AISO: blu, azzurro, bianco)
    ========================================================= */
 
 :root {
@@ -891,7 +891,10 @@ a.lesson-card:hover { border-color: var(--blue-200); box-shadow: var(--shadow); 
 .brand-aiso { display: inline-flex; align-items: center; gap: 14px; margin-left: 4px; }
 .brand-aiso::before { content: ""; width: 1px; height: 26px; background: var(--border-strong); }
 .brand-aiso img { height: 30px; width: auto; }
-.is-dark .brand-aiso { display: none; }
+.brand-aiso .aiso-dark { display: none; }
+.is-dark .brand-aiso .aiso-light { display: none; }
+.is-dark .brand-aiso .aiso-dark { display: block; }
+.is-dark .brand-aiso::before { background: rgba(255,255,255,.25); }
 @media (max-width: 900px) { .brand-aiso { display: none; } }
 .site-footer { background: #fff; color: var(--text-muted); border-top: 1px solid var(--border); }
 .brand--footer { color: var(--navy-900); }
@@ -900,6 +903,72 @@ a.lesson-card:hover { border-color: var(--blue-200); box-shadow: var(--shadow); 
 .footer-links a:hover { color: var(--blue-400); }
 .footer-aiso { display: flex; align-items: center; gap: 12px; margin-top: 18px; font-size: .85rem; }
 .footer-aiso img { height: 40px; width: auto; }
+
+/* =========================================================
+   Marchio Smile Up
+   ========================================================= */
+.logo-mark { width: 40px; height: 40px; flex: none; }
+.wordmark { font: 900 1.45rem/1 "Nunito", var(--font-head); letter-spacing: -0.01em; display: inline-flex; }
+.wordmark b { font-weight: 900; color: var(--blue-600); }
+.wordmark i { font-style: normal; color: var(--blue-400); }
+.is-dark .wordmark b { color: #fff; }
+.is-dark .wordmark i { color: var(--sky-400); }
+.brand { gap: 10px; }
+.brand--footer .logo-mark { width: 46px; height: 46px; }
+.brand--footer .wordmark { font-size: 1.7rem; }
+.tagline { margin: 10px 0 0; font: 600 .78rem/1 var(--font-head); letter-spacing: .22em; text-transform: uppercase; color: var(--blue-600); }
+
+/* =========================================================
+   Home scura "da laboratorio" con gli ologrammi
+   ========================================================= */
+.landing { color: var(--text-on-dark);
+  background:
+    radial-gradient(70% 45% at 75% 12%, rgba(26, 163, 210, .16), transparent 70%),
+    radial-gradient(60% 40% at 10% 45%, rgba(0, 68, 147, .35), transparent 70%),
+    radial-gradient(70% 40% at 80% 75%, rgba(26, 163, 210, .10), transparent 70%),
+    linear-gradient(180deg, #03142F 0%, #041833 45%, #031129 100%); }
+.landing h1, .landing h2, .landing h3 { color: #fff; }
+.landing .eyebrow { color: var(--sky-400); }
+.landing .section-head p { color: #B9CDE6; }
+.landing .hero-wave { opacity: .45; }
+.hero-tagline { margin: 22px 0 0; font: 700 .8rem/1 var(--font-head); letter-spacing: .24em; text-transform: uppercase; color: var(--sky-400);
+  animation: heroIn .8s var(--ease-out) both .1s; }
+.landing .hero-w h1 { color: #fff; margin-top: 14px; }
+.landing .hero-w h1 .grad-text .word { background: linear-gradient(90deg, #8FD0EC, #4DB8E2 60%, #BFE6F7); background-size: 200% 100%;
+  -webkit-background-clip: text; background-clip: text; }
+.landing .hero-w .hero-lead { color: #C3D5EC; }
+.landing .hero-w .hero-stats { border-top-color: rgba(255,255,255,.12); }
+.landing .hero-w .hero-stats strong { color: #fff; }
+.landing .hero-w .hero-stats span { color: #A9C1DE; }
+.aiso-chip.glass-panel { color: #D2E6F5; }
+.aiso-chip img { height: 34px; }
+
+.step-w.glass-panel { color: #fff; }
+.step-w.glass-panel p { color: #C3D5EC; }
+.step-w-num { color: var(--sky-400); }
+
+.landing .programma-w .syl-item { background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+  border-color: rgba(255,255,255,.14); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 12px 30px rgba(0,0,0,.25); }
+.landing .programma-w .syl-item:hover { border-color: rgba(143, 208, 236, .5); }
+.landing .programma-w .syl-item h3 { color: #fff; }
+.landing .programma-w .syl-item p, .landing .programma-w .syl-meta { color: #B9CDE6; }
+.landing .syl-num { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); color: var(--sky-400); }
+
+/* Argomenti: elenco fermo e discreto */
+.topics { padding-block: 40px 8px; }
+.topics-inner { display: grid; grid-template-columns: auto 1fr; gap: 16px 32px; align-items: baseline;
+  padding-top: 28px; border-top: 1px solid rgba(255,255,255,.1); }
+.topics-title { margin: 0; font: 600 .78rem/1.4 var(--font-head); letter-spacing: .16em; text-transform: uppercase; color: #8FB2D6; }
+.topic-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px 24px; }
+.topic-list li { display: flex; align-items: center; gap: 10px; color: #D2E2F3; font-size: .98rem; }
+.topic-list li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--sky-400); box-shadow: 0 0 8px rgba(143, 208, 236, .8); }
+
+.landing .faq details { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.12); }
+.landing .faq details[open] { border-color: rgba(143, 208, 236, .45); box-shadow: none; }
+.landing .faq summary { color: #fff; }
+.landing .faq summary .icon { color: var(--sky-400); }
+.landing .faq details p { color: #B9CDE6; }
+.landing .badge-section { background: linear-gradient(135deg, rgba(0, 68, 147, .55), rgba(26, 163, 210, .25)); border-block: 1px solid rgba(255,255,255,.08); }
 
 /* =========================================================
    Responsive
@@ -932,6 +1001,9 @@ a.lesson-card:hover { border-color: var(--blue-200); box-shadow: var(--shadow); 
   .step-w { padding: 24px; }
   .programma-w-head { grid-template-columns: 1fr; }
   .slot--arch { height: 300px; }
+  .topics-inner { grid-template-columns: 1fr; }
+  .wordmark { font-size: 1.25rem; }
+  .logo-mark { width: 34px; height: 34px; }
   .hero-copy::before { inset: -20px -16px; background: rgba(5, 12, 33, .35); border-radius: 32px; filter: blur(24px); }
   .scroll-hint { display: none; }
   .float-badge { right: 8px; bottom: -48px; width: 128px; }

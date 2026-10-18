@@ -1,6 +1,7 @@
-// Mondo 3D della home: una tela fissa dietro la pagina. Ogni oggetto (dente, spazzolino,
-// arcata) segue un "posto" nella pagina (un elemento con data-slot) e scorre con essa,
-// un po' più lentamente del testo, ruotando mentre passa. Usa three.js r128.
+// Mondo 3D della home in stile "ologramma": oggetti disegnati con linee luminose
+// azzurre, una pedana a griglia sotto ciascuno e il riflesso. La tela è fissa dietro
+// la pagina; ogni oggetto segue un "posto" (data-slot) e scorre con il testo,
+// un po' più lentamente, ruotando mentre passa. Usa three.js r128.
 
 let threePromise;
 /** Carica three.js solo quando serve (la home), dalla copia inclusa nel sito. */
@@ -15,9 +16,6 @@ export function loadThree() {
   });
   return threePromise;
 }
-
-/** Colore indicato in sRGB (come nei CSS), convertito nello spazio lineare usato dal rendering. */
-const srgb = (THREE, hex) => new THREE.Color(hex).convertSRGBToLinear();
 
 const modelUrl = (name) => new URL(`../models/${name}.bin`, import.meta.url).href;
 
@@ -44,27 +42,169 @@ async function loadModel(THREE, name) {
   return geo;
 }
 
-// ---------- materiali e oggetti ----------
+// ---------- materiali olografici ----------
 
-function enamel(THREE, opts = {}) {
-  return new THREE.MeshPhysicalMaterial({
-    color: srgb(THREE, 0xffffff), roughness: 0.26, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.22,
-    envMapIntensity: 0.9, vertexColors: true, ...opts,
-  });
-}
+const HOLO_VERT = /* glsl */`
+  varying vec3 vLocal;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  varying float vWorldY;
+  void main() {
+    vec4 local = vec4(position, 1.0);
+    vec3 n = normal;
+    #ifdef USE_INSTANCING
+      local = instanceMatrix * local;
+      n = mat3(instanceMatrix) * n;
+    #endif
+    vLocal = local.xyz;
+    vec4 world = modelMatrix * local;
+    vWorldY = world.y;
+    vec4 mv = viewMatrix * world;
+    vView = normalize(-mv.xyz);
+    vNormal = normalize(normalMatrix * n);
+    gl_Position = projectionMatrix * mv;
+  }`;
 
-/** Smalto bianco sulla corona, avorio più caldo scendendo lungo le radici. */
-function paintTooth(THREE, geo, crownY = 0.0) {
-  const p = geo.attributes.position;
-  const col = new Float32Array(p.count * 3);
-  const white = srgb(THREE, 0xfbfbf8), ivory = srgb(THREE, 0xebdfc8), c = new THREE.Color();
-  for (let i = 0; i < p.count; i++) {
-    const t = Math.min(1, Math.max(0, (crownY - p.getY(i)) / 1.1));
-    c.copy(white).lerp(ivory, t * t);
-    col.set([c.r, c.g, c.b], i * 3);
+const HOLO_FRAG = /* glsl */`
+  uniform vec3 uColor;
+  uniform float uOpacity;
+  uniform float uDensity;
+  uniform float uMeridians;
+  uniform float uAxisX;
+  uniform float uTime;
+  uniform float uReflect;
+  uniform float uFloor;
+  uniform float uFadeLen;
+  varying vec3 vLocal;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  varying float vWorldY;
+
+  float gridLine(float v) {
+    float d = abs(fract(v - 0.5) - 0.5) / max(fwidth(v), 1e-4);
+    return 1.0 - min(d, 1.0);
   }
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+
+  void main() {
+    // Anelli lungo l'asse principale e meridiani attorno ad esso.
+    float along = mix(vLocal.y, vLocal.x, uAxisX);
+    vec2 around = mix(vLocal.xz, vLocal.zy, uAxisX);
+    float ring = gridLine(along * uDensity);
+    float merid = gridLine(atan(around.y, around.x) / 6.2831853 * uMeridians);
+    float line = max(ring, merid * 0.85);
+
+    float facing = abs(dot(normalize(vNormal), normalize(vView)));
+    float fres = pow(1.0 - facing, 2.2);
+    float scan = 0.5 + 0.5 * sin(vWorldY * 5.0 - uTime * 1.6);
+
+    float a = (0.05 + line * 0.5 + fres * 0.75) * (0.85 + 0.15 * scan);
+    if (uReflect > 0.5) a *= smoothstep(uFloor - uFadeLen, uFloor, vWorldY) * 0.32;
+    a *= uOpacity;
+    vec3 col = mix(uColor, vec3(0.86, 0.97, 1.0), clamp(fres * 0.7 + line * 0.25, 0.0, 1.0));
+    gl_FragColor = vec4(col * a, a);
+  }`;
+
+function holoMaterial(THREE, { color = 0x4cc3ff, density = 24, meridians = 48, axisX = false, opacity = 1 } = {}) {
+  const mat = new THREE.ShaderMaterial({
+    vertexShader: HOLO_VERT,
+    fragmentShader: HOLO_FRAG,
+    uniforms: {
+      uColor: { value: new THREE.Color(color) },
+      uOpacity: { value: opacity },
+      uDensity: { value: density },
+      uMeridians: { value: meridians },
+      uAxisX: { value: axisX ? 1 : 0 },
+      uTime: { value: 0 },
+      uReflect: { value: 0 },
+      uFloor: { value: 0 },
+      uFadeLen: { value: 1 },
+    },
+    transparent: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    premultipliedAlpha: true,
+  });
+  mat.extensions = { derivatives: true };
+  return mat;
 }
+
+const GRID_FRAG = /* glsl */`
+  uniform vec3 uColor;
+  uniform float uOpacity;
+  varying vec2 vUv;
+  void main() {
+    vec2 g = vUv * 18.0;
+    vec2 d = abs(fract(g - 0.5) - 0.5) / max(fwidth(g), vec2(1e-4));
+    float line = 1.0 - min(min(d.x, d.y), 1.0);
+    vec2 c = vUv - 0.5;
+    float fade = smoothstep(0.5, 0.12, max(abs(c.x), abs(c.y)) * 0.6 + length(c) * 0.55);
+    float a = (line * 0.55 + 0.06) * fade * uOpacity;
+    gl_FragColor = vec4(uColor * a, a);
+  }`;
+
+function gridMaterial(THREE) {
+  const mat = new THREE.ShaderMaterial({
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: GRID_FRAG,
+    uniforms: { uColor: { value: new THREE.Color(0x4cc3ff) }, uOpacity: { value: 0.9 } },
+    transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, premultipliedAlpha: true,
+  });
+  mat.extensions = { derivatives: true };
+  return mat;
+}
+
+/** Copia un oggetto sostituendo i materiali con la versione "riflesso" (sfuma verso il basso). */
+function reflectionOf(object) {
+  const clone = object.clone(true);
+  clone.traverse((o) => {
+    if (o.material?.uniforms) {
+      o.material = o.material.clone();
+      o.material.extensions = { derivatives: true };
+      o.material.uniforms.uReflect.value = 1;
+    }
+  });
+  return clone;
+}
+
+/**
+ * Oggetto in esposizione: l'oggetto, la pedana a griglia sotto di lui e il riflesso.
+ * `floor` è la quota della pedana nello spazio dell'oggetto.
+ */
+function exhibit(THREE, object, { floor, gridSize = 3.6 }) {
+  const root = new THREE.Group();
+  const pivot = new THREE.Group();
+  pivot.add(object);
+  const mirrorPivot = new THREE.Group();
+  mirrorPivot.add(reflectionOf(object));
+  const mirror = new THREE.Group();
+  mirror.add(mirrorPivot);
+  mirror.scale.y = -1;
+  mirror.position.y = 2 * floor;
+  const grid = new THREE.Mesh(new THREE.PlaneGeometry(gridSize, gridSize), gridMaterial(THREE));
+  grid.rotation.x = -Math.PI / 2;
+  grid.position.y = floor;
+  root.add(grid, mirror, pivot);
+  const mats = [];
+  root.traverse((o) => { if (o.material?.uniforms?.uTime) mats.push(o.material); });
+  return {
+    root, pivot, floor,
+    setRotation(x, y, z) { pivot.rotation.set(x, y, z); mirrorPivot.rotation.set(x, y, z); },
+    setLift(v) { pivot.position.y = v; mirrorPivot.position.y = v; },
+    update(time) {
+      const worldFloor = new THREE.Vector3(0, floor, 0).applyMatrix4(root.matrixWorld).y;
+      const fadeLen = 1.4 * root.scale.y;
+      mats.forEach((m) => {
+        m.uniforms.uTime.value = time;
+        m.uniforms.uFloor.value = worldFloor;
+        m.uniforms.uFadeLen.value = fadeLen;
+      });
+    },
+    get children() { return [pivot, mirrorPivot]; },
+  };
+}
+
+// ---------- oggetti ----------
 
 function centerGeometry(geo) {
   const b = geo.boundingBox;
@@ -73,30 +213,20 @@ function centerGeometry(geo) {
   return geo;
 }
 
-function makeMolar(THREE, geo) {
-  paintTooth(THREE, geo, 0.05);
-  centerGeometry(geo);
-  return new THREE.Mesh(geo, enamel(THREE));
-}
-
 function makeBrush(THREE, handleGeo, gripGeo) {
-  const group = new THREE.Group();
-  const handle = new THREE.Mesh(handleGeo, new THREE.MeshPhysicalMaterial({
-    color: srgb(THREE, 0x0a5bb5), roughness: 0.18, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.06, envMapIntensity: 1.2,
-  }));
-  const grip = new THREE.Mesh(gripGeo, new THREE.MeshPhysicalMaterial({
-    color: srgb(THREE, 0x9fd8f2), roughness: 0.55, metalness: 0, sheen: srgb(THREE, 0xffffff), envMapIntensity: 0.8,
-  }));
+  const inner = new THREE.Group();
+  inner.add(new THREE.Mesh(handleGeo, holoMaterial(THREE, { density: 20, meridians: 22, axisX: true })));
+  inner.add(new THREE.Mesh(gripGeo, holoMaterial(THREE, { color: 0x8fe0ff, density: 34, meridians: 22, axisX: true, opacity: 0.9 })));
 
-  // Ciuffi di setole: cilindri con la punta arrotondata, disposti sull'ovale della testina.
+  // Ciuffi di setole disposti sull'ovale della testina.
   const profile = [];
-  const R = 0.021, H = 0.25;
+  const R = 0.021, H = 0.27;
   profile.push(new THREE.Vector2(0, 0), new THREE.Vector2(R, 0), new THREE.Vector2(R, H - R));
-  for (let k = 1; k <= 6; k++) {
-    const a = (k / 6) * (Math.PI / 2);
+  for (let k = 1; k <= 5; k++) {
+    const a = (k / 5) * (Math.PI / 2);
     profile.push(new THREE.Vector2(Math.cos(a) * R, H - R + Math.sin(a) * R));
   }
-  const tuftGeo = new THREE.LatheGeometry(profile, 10);
+  const tuftGeo = new THREE.LatheGeometry(profile, 8);
   tuftGeo.rotateX(Math.PI / 2);
   const spots = [];
   for (let x = 2.87; x <= 3.34; x += 0.052) {
@@ -105,32 +235,23 @@ function makeBrush(THREE, handleGeo, gripGeo) {
       if (ex * ex + ey * ey <= 1) spots.push([x, y]);
     }
   }
-  const tufts = new THREE.InstancedMesh(tuftGeo, new THREE.MeshStandardMaterial({ roughness: 0.5, metalness: 0 }), spots.length);
-  const m = new THREE.Matrix4(), white = srgb(THREE, 0xffffff), sky = srgb(THREE, 0x7ccbec);
-  spots.forEach(([x, y], k) => {
-    m.makeTranslation(x, y, 0.1);
-    tufts.setMatrixAt(k, m);
-    tufts.setColorAt(k, (Math.round((x - 2.87) / 0.052) + Math.round((y + 0.15) / 0.052)) % 3 === 0 ? sky : white);
-  });
-
-  const inner = new THREE.Group();
-  inner.add(handle, grip, tufts);
-  inner.position.set(-1.7, 0, -0.05); // ruota attorno al centro dello spazzolino
+  const tufts = new THREE.InstancedMesh(tuftGeo, holoMaterial(THREE, { color: 0xa9e7ff, density: 60, meridians: 6, opacity: 0.8 }), spots.length);
+  const m = new THREE.Matrix4();
+  spots.forEach(([x, y], k) => { m.makeTranslation(x, y, 0.1); tufts.setMatrixAt(k, m); });
+  inner.add(tufts);
+  inner.position.set(-1.7, 0, -0.05);
+  const group = new THREE.Group();
   group.add(inner);
-  group.userData.height = 3.6;
   return group;
 }
 
-/** Arcata dentale stilizzata: corone su una base azzurra "di vetro". */
-function makeArch(THREE, crowns) {
-  const group = new THREE.Group();
+/** Bocca stilizzata: arcata inferiore e superiore (corone su gengive), che si aprono scorrendo. */
+function makeMouth(THREE, crowns) {
   const order = ['molar', 'molar', 'premolar', 'premolar', 'canine', 'incisor', 'incisor'];
   const widths = [0.6, 0.64, 0.44, 0.45, 0.47, 0.4, 0.5];
   const side = order.map((t, i) => ({ t, w: widths[i] }));
   const teeth = [...side, ...side.slice().reverse()];
   const total = teeth.reduce((a, t) => a + t.w * 1.03, 0);
-
-  // Curva a ferro di cavallo, scalata finché la sua lunghezza ospita tutti i denti.
   const span = (100 * Math.PI) / 180;
   const pts = (A, B) => Array.from({ length: 41 }, (_, i) => {
     const phi = -span + (2 * span * i) / 40;
@@ -139,80 +260,74 @@ function makeArch(THREE, crowns) {
   let curve = new THREE.CatmullRomCurve3(pts(1, 1.15));
   const s = total / curve.getLength();
   curve = new THREE.CatmullRomCurve3(pts(s, 1.15 * s));
-
-  const mat = enamel(THREE);
-  let along = 0;
   const L = curve.getLength();
-  teeth.forEach(({ t, w }) => {
-    const u = (along + w * 0.515) / L;
-    along += w * 1.03;
-    const geo = crowns[t];
-    const bb = geo.boundingBox;
-    const scale = w / (bb.max.x - bb.min.x);
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.scale.setScalar(scale);
-    const p = curve.getPointAt(u), tan = curve.getTangentAt(u);
-    mesh.position.copy(p);
-    mesh.rotation.y = Math.atan2(-tan.z, tan.x);
-    group.add(mesh);
-  });
 
-  const gum = new THREE.Mesh(
-    new THREE.TubeGeometry(curve, 120, 0.3, 24, false),
-    new THREE.MeshPhysicalMaterial({
-      color: srgb(THREE, 0x8fd0ec), roughness: 0.12, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.05,
-      transparent: true, opacity: 0.55, envMapIntensity: 1.2,
-    }),
-  );
-  gum.scale.y = 0.55;
-  gum.position.y = -0.05;
-  group.add(gum);
-  for (const end of [0, 1]) {
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.3, 24, 16), gum.material);
-    cap.position.copy(curve.getPointAt(end)).setY(-0.05);
-    cap.scale.y = 0.55;
-    group.add(cap);
-  }
-  // Centra l'arcata sul suo punto medio.
-  const box = new THREE.Box3().setFromObject(group);
+  const toothMat = holoMaterial(THREE, { density: 30, meridians: 36, opacity: 0.72 });
+  const gumMat = holoMaterial(THREE, { color: 0x2e9be0, density: 22, meridians: 140, opacity: 0.75 });
+
+  const arch = () => {
+    const g = new THREE.Group();
+    let along = 0;
+    teeth.forEach(({ t, w }) => {
+      const u = (along + w * 0.515) / L;
+      along += w * 1.03;
+      const geo = crowns[t];
+      const bb = geo.boundingBox;
+      const mesh = new THREE.Mesh(geo, toothMat);
+      mesh.scale.setScalar(w / (bb.max.x - bb.min.x));
+      const p = curve.getPointAt(u), tan = curve.getTangentAt(u);
+      mesh.position.copy(p);
+      mesh.rotation.y = Math.atan2(-tan.z, tan.x);
+      g.add(mesh);
+    });
+    const gum = new THREE.Mesh(new THREE.TubeGeometry(curve, 140, 0.32, 20, false), gumMat);
+    gum.scale.y = 0.8;
+    gum.position.y = -0.12;
+    g.add(gum);
+    for (const end of [0, 1]) {
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.32, 20, 14), gumMat);
+      cap.position.copy(curve.getPointAt(end)).setY(-0.12);
+      cap.scale.y = 0.8;
+      g.add(cap);
+    }
+    return g;
+  };
+
+  const lower = arch();
+  const upper = arch();
+  upper.rotation.x = Math.PI;
+  upper.scale.set(1.04, 1, 1.04);
+  const mouth = new THREE.Group();
+  mouth.add(lower, upper);
+  const box = new THREE.Box3().setFromObject(lower);
   const c = box.getCenter(new THREE.Vector3());
-  group.children.forEach((o) => o.position.sub(c));
+  lower.position.set(-c.x, 0, -c.z);
+  upper.position.set(-c.x * 1.04, 0.95, -c.z * 1.04);
   const wrap = new THREE.Group();
-  wrap.add(group);
-  wrap.userData.height = box.max.z - box.min.z;
+  wrap.add(mouth);
+  wrap.userData = { upper, openBase: 0.95 };
   return wrap;
 }
 
-function makeShadow(THREE) {
-  const c = document.createElement('canvas');
-  c.width = c.height = 128;
-  const g = c.getContext('2d');
-  const grad = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-  grad.addColorStop(0, 'rgba(0,50,120,.28)');
-  grad.addColorStop(1, 'rgba(0,50,120,0)');
-  g.fillStyle = grad;
-  g.fillRect(0, 0, 128, 128);
-  return new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.7), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false }));
-}
-
-/** Ambiente luminoso "da studio" per i riflessi su smalto e plastica. */
-function studioEnvironment(THREE, renderer) {
-  const env = new THREE.Scene();
-  env.add(new THREE.Mesh(new THREE.BoxGeometry(20, 20, 20), new THREE.MeshBasicMaterial({ color: srgb(THREE, 0x6d8fb3), side: THREE.BackSide })));
-  const panel = (w, h, color, pos) => {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: srgb(THREE, color), side: THREE.DoubleSide }));
-    m.position.set(...pos);
-    m.lookAt(0, 0, 0);
-    env.add(m);
-  };
-  panel(10, 4, 0xffffff, [0, 8, 3]);
-  panel(5, 9, 0xffffff, [-8, 1, 5]);
-  panel(4, 9, 0x8fd0ec, [8, 0, 0]);
-  panel(12, 3, 0xe8f4fb, [0, -8, 4]);
-  const pmrem = new THREE.PMREMGenerator(renderer);
-  const tex = pmrem.fromScene(env, 0.03).texture;
-  pmrem.dispose();
-  return tex;
+/** Puntini luminosi a profondità diverse: scorrono a velocità diverse e danno il senso del movimento. */
+function makeDust(THREE, count) {
+  const geo = new THREE.BufferGeometry();
+  const pos = new Float32Array(count * 3);
+  const size = new Float32Array(count);
+  let seed = 11;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const data = Array.from({ length: count }, (_, i) => {
+    size[i] = 2 + rnd() * 5;
+    return { page: rnd() * 4, x: rnd() * 2 - 1, z: -6 + rnd() * 8, speed: 0.45 + rnd() * 0.9, phase: rnd() * 6 };
+  });
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('size', new THREE.BufferAttribute(size, 1));
+  const mat = new THREE.ShaderMaterial({
+    vertexShader: `attribute float size; void main(){ vec4 mv = modelViewMatrix * vec4(position,1.0); gl_PointSize = size * (8.0 / -mv.z) * ${(Math.min(devicePixelRatio || 1, 2)).toFixed(1)}; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: 'void main(){ float d = length(gl_PointCoord - 0.5); float a = smoothstep(0.5, 0.0, d) * 0.55; gl_FragColor = vec4(vec3(0.55, 0.85, 1.0) * a, a); }',
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, premultipliedAlpha: true,
+  });
+  return { points: new THREE.Points(geo, mat), data, pos };
 }
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -230,53 +345,31 @@ export async function createWorld(canvas, root, { reducedMotion = false } = {}) 
     return null;
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.0;
+  renderer.setClearColor(0x000000, 0);
 
   const [molarGeo, handleGeo, gripGeo, cMolar, cPremolar, cCanine, cIncisor] = await Promise.all(
     ['molar', 'brush-handle', 'brush-grip', 'crown-molar', 'crown-premolar', 'crown-canine', 'crown-incisor'].map((n) => loadModel(THREE, n)),
   );
-
-  const scene = new THREE.Scene();
-  scene.environment = studioEnvironment(THREE, renderer);
-  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
-  camera.position.set(0, 0, 12);
-  scene.add(new THREE.HemisphereLight(srgb(THREE, 0xffffff), srgb(THREE, 0x9cc8e4), 0.35));
-  const key = new THREE.DirectionalLight(srgb(THREE, 0xffffff), 1.7); key.position.set(-4, 6, 5); scene.add(key);
-  const rim = new THREE.DirectionalLight(srgb(THREE, 0x4db8e2), 1.6); rim.position.set(5, 1, -4); scene.add(rim);
-  const fill = new THREE.DirectionalLight(srgb(THREE, 0xdcf1fa), 0.35); fill.position.set(4, -2, 6); scene.add(fill);
-
-  // Oggetti
-  const molar = makeMolar(THREE, molarGeo);
-  const molarShadow = makeShadow(THREE);
-  const brush = makeBrush(THREE, handleGeo, gripGeo);
   [cMolar, cPremolar, cCanine, cIncisor].forEach((g) => {
-    paintTooth(THREE, g, 0.6);
     const b = g.boundingBox;
     g.translate(-(b.min.x + b.max.x) / 2, 0, -(b.min.z + b.max.z) / 2);
     g.computeBoundingBox();
   });
-  const arch = makeArch(THREE, { molar: cMolar, premolar: cPremolar, canine: cCanine, incisor: cIncisor });
 
-  const molarPivot = new THREE.Group(); molarPivot.add(molar); scene.add(molarPivot, molarShadow);
-  const brushPivot = new THREE.Group(); brushPivot.add(brush); scene.add(brushPivot);
-  const archPivot = new THREE.Group(); archPivot.add(arch); scene.add(archPivot);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+  camera.position.set(0, 0.6, 12);
+  camera.lookAt(0, 0, 0);
 
-  // Bollicine azzurre a profondità diverse: scorrono a velocità diverse e danno il senso del movimento.
-  const bubbleMat = new THREE.MeshPhysicalMaterial({
-    color: srgb(THREE, 0xbfe6f7), roughness: 0.05, metalness: 0, clearcoat: 1, transparent: true, opacity: 0.55, envMapIntensity: 1.4,
-  });
-  const bubbleGeo = new THREE.SphereGeometry(1, 32, 24);
-  let seed = 7;
-  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-  const bubbles = Array.from({ length: 22 }, () => {
-    const mesh = new THREE.Mesh(bubbleGeo, bubbleMat);
-    const r = 0.06 + rnd() * 0.22;
-    mesh.scale.setScalar(r);
-    scene.add(mesh);
-    return { mesh, page: rnd() * 3.6, x: rnd() * 2 - 1, z: -3 + rnd() * 6, speed: 0.6 + rnd() * 0.9, phase: rnd() * 6 };
-  });
+  centerGeometry(molarGeo);
+  const molar = exhibit(THREE, new THREE.Mesh(molarGeo, holoMaterial(THREE, { density: 26, meridians: 64 })), { floor: -1.5, gridSize: 3.4 });
+  const brush = exhibit(THREE, makeBrush(THREE, handleGeo, gripGeo), { floor: -1.75, gridSize: 4.4 });
+  const mouth = makeMouth(THREE, { molar: cMolar, premolar: cPremolar, canine: cCanine, incisor: cIncisor });
+  const mouthEx = exhibit(THREE, mouth, { floor: -0.9, gridSize: 5 });
+  scene.add(molar.root, brush.root, mouthEx.root);
+
+  const dust = makeDust(THREE, 140);
+  scene.add(dust.points);
 
   const slots = {
     molar: root.querySelector('[data-slot="molar"]'),
@@ -300,13 +393,13 @@ export async function createWorld(canvas, root, { reducedMotion = false } = {}) 
   /** Converte il rettangolo di un elemento in posizione e scala nel mondo 3D. */
   function place(el, parallax = 0.85) {
     const r = el.getBoundingClientRect();
-    const cy = (r.top + r.height / 2 - H / 2) / H;    // -0.5 … 0.5 quando è sullo schermo
+    const cy = (r.top + r.height / 2 - H / 2) / H;
     const cx = (r.left + r.width / 2) / W - 0.5;
     return {
       x: cx * visW,
       y: -cy * visH * parallax,
-      size: (Math.min(r.height / H * visH, r.width / W * visW)),
-      t: clamp(cy, -1.5, 1.5),                          // posizione relativa: negativa sopra il centro
+      size: Math.min((r.height / H) * visH, (r.width / W) * visW),
+      t: clamp(cy, -1.5, 1.5),
       visible: r.bottom > -H * 0.6 && r.top < H * 1.6,
     };
   }
@@ -323,26 +416,22 @@ export async function createWorld(canvas, root, { reducedMotion = false } = {}) 
     const ease = reducedMotion ? 1 : 0.12;
     let any = false;
 
-    // Dente: ruota mentre la pagina scende.
     if (slots.molar) {
       const s = place(slots.molar, 0.75);
-      molarPivot.visible = molarShadow.visible = s.visible;
+      molar.root.visible = s.visible;
       if (s.visible) {
         any = true;
-        const k = s.size / 2.8;
-        spin.molar += (s.t * 2.6 - spin.molar) * ease;
-        molarPivot.position.set(s.x, s.y + Math.sin(time * 1.1) * 0.06 * k, 0);
-        molarPivot.scale.setScalar(k);
-        molarPivot.rotation.set(0.22 + pointer.y * 0.15 + spin.molar * 0.15, -0.6 + spin.molar + Math.sin(time * 0.5) * 0.25 + pointer.x * 0.35, 0.05);
-        molarShadow.position.set(s.x, s.y - 1.45 * k, -0.6);
-        molarShadow.scale.setScalar(k);
+        spin.molar += (s.t * 2.4 - spin.molar) * ease;
+        molar.root.position.set(s.x, s.y + 0.15, 0);
+        molar.root.scale.setScalar(s.size / 3.4);
+        molar.setLift(Math.sin(time * 1.1) * 0.08);
+        molar.setRotation(0.12 + pointer.y * 0.12, -0.5 + spin.molar + Math.sin(time * 0.45) * 0.3 + pointer.x * 0.35, 0);
       }
     }
 
-    // Spazzolino: accompagna i tre passi cambiando angolazione.
     if (slots.brush) {
       const s = place(slots.brush, 1);
-      brushPivot.visible = s.visible;
+      brush.root.visible = s.visible;
       if (s.visible) {
         any = true;
         let p = 0;
@@ -351,41 +440,44 @@ export async function createWorld(canvas, root, { reducedMotion = false } = {}) 
           p = clamp((H * 0.5 - r.top) / Math.max(1, r.height), 0, 1);
         }
         spin.brush += (p - spin.brush) * ease;
-        const k = s.size / (W < 700 ? 3.1 : 3.9);
-        brushPivot.position.set(s.x, s.y + Math.sin(time * 0.9) * 0.05, 0);
-        brushPivot.scale.setScalar(k);
-        brushPivot.rotation.set(
-          0.35 - spin.brush * 0.5 + pointer.y * 0.1,
+        brush.root.position.set(s.x, s.y + 0.2, 0);
+        brush.root.scale.setScalar(s.size / (W < 700 ? 3.6 : 4.4));
+        brush.setLift(Math.sin(time * 0.9) * 0.06);
+        brush.setRotation(
+          0.3 - spin.brush * 0.45 + pointer.y * 0.1,
           -0.5 + spin.brush * Math.PI * 1.15 + pointer.x * 0.2,
-          0.9 - spin.brush * 0.5 + Math.sin(time * 0.7) * 0.05,
+          0.95 - spin.brush * 0.55 + Math.sin(time * 0.7) * 0.04,
         );
       }
     }
 
-    // Arcata: si inclina verso chi guarda mentre arriva al centro dello schermo.
     if (slots.arch) {
       const s = place(slots.arch, 0.8);
-      archPivot.visible = s.visible;
+      mouthEx.root.visible = s.visible;
       if (s.visible) {
         any = true;
         spin.arch += (s.t - spin.arch) * ease;
-        const k = s.size / 3.7;
-        archPivot.position.set(s.x, s.y, 0);
-        archPivot.scale.setScalar(k);
-        archPivot.rotation.set(0.75 + spin.arch * 0.9 + pointer.y * 0.1, spin.arch * -1.2 + Math.sin(time * 0.4) * 0.2 + pointer.x * 0.3, 0);
+        const open = clamp(0.5 - spin.arch, 0, 1.2);  // si apre mentre sale verso il centro
+        mouthEx.root.position.set(s.x, s.y - 0.3, 0);
+        mouthEx.root.scale.setScalar(s.size / (W < 700 ? 5.2 : 4.4));
+        mouth.userData.upper.position.y = mouth.userData.openBase + open * 1.1;
+        mouth.userData.upper.rotation.x = Math.PI + open * 0.35;
+        mouthEx.setRotation(0.12 + open * 0.35 + pointer.y * 0.08, spin.arch * -0.9 + Math.sin(time * 0.35) * 0.18 + pointer.x * 0.25, 0);
       }
     }
 
-    // Bollicine legate alla pagina: ognuna scorre alla sua velocità.
     const page = scrollY / H;
-    bubbles.forEach((b) => {
-      const y = (b.page - page) * visH * b.speed + Math.sin(time * 0.6 + b.phase) * 0.15;
-      b.mesh.visible = Math.abs(y) < visH;
-      b.mesh.position.set(b.x * visW * 0.55, y, b.z);
+    dust.data.forEach((d, i) => {
+      const y = (d.page - page) * visH * d.speed + Math.sin(time * 0.5 + d.phase) * 0.12;
+      dust.pos[i * 3] = d.x * visW * 0.6;
+      dust.pos[i * 3 + 1] = Math.abs(y) < visH ? y : 999;
+      dust.pos[i * 3 + 2] = d.z;
     });
-    any = any || page < 3.6;
+    dust.points.geometry.attributes.position.needsUpdate = true;
+    any = any || page < 4;
 
-    // Si disegna anche il primo fotogramma senza oggetti, così la tela si svuota.
+    scene.updateMatrixWorld();
+    [molar, brush, mouthEx].forEach((e) => e.update(time));
     if (any || drewLast) renderer.render(scene, camera);
     drewLast = any;
     if (running) raf = requestAnimationFrame(frame);
@@ -400,9 +492,8 @@ export async function createWorld(canvas, root, { reducedMotion = false } = {}) 
       this.stop();
       scene.traverse((o) => {
         o.geometry?.dispose();
-        (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => { m?.map?.dispose(); m?.dispose(); });
+        (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => m?.dispose());
       });
-      scene.environment?.dispose();
       renderer.dispose();
     },
   };

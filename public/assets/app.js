@@ -109,7 +109,7 @@ async function render() {
   if (!route?.section) window.scrollTo({ top: 0, behavior: 'instant' });
   cleanup = page.mount?.(main) || null;
   if (!route?.section) main.focus({ preventScroll: true });
-  document.title = `${titleFor(route)}Sorriso in Salute`;
+  document.title = `${titleFor(route)}Smile Up`;
 }
 
 function titleFor(route) {

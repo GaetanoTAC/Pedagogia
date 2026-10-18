@@ -91,6 +91,10 @@ def molar_crown(x, y, z):
     crown = smin(body, cusps, 0.2)
     # Fossa centrale leggermente scavata
     crown = smax(crown, -sphere(x, y, z, (0, 1.02, 0), 0.24), 0.12)
+    # Solchi occlusali a croce fra le cuspidi
+    groove_x = round_cone(x, y, z, (-0.42, 0.86, 0.0), (0.42, 0.86, 0.0), 0.05, 0.05)
+    groove_z = round_cone(x, y, z, (0.0, 0.86, -0.36), (0.0, 0.86, 0.36), 0.045, 0.045)
+    crown = smax(crown, -smin(groove_x, groove_z, 0.04), 0.035)
     return crown
 
 
@@ -122,6 +126,7 @@ def crown_premolar(x, y, z):
     body = ellipsoid(x, y, z, (0, 0.28, 0), (0.4, 0.42, 0.47))
     cusps = smin(sphere(x, y, z, (0, 0.52, 0.17), 0.24), sphere(x, y, z, (0, 0.5, -0.17), 0.22), 0.08)
     d = smin(body, cusps, 0.18)
+    d = smax(d, -round_cone(x, y, z, (-0.3, 0.74, 0.0), (0.3, 0.74, 0.0), 0.04, 0.04), 0.03)
     d = smin(d, round_cone(x, y, z, (0, 0.1, 0), (0, -0.25, 0), 0.36, 0.32), 0.14)
     return cut_crown(d, y)
 

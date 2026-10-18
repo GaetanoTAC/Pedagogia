@@ -38,7 +38,7 @@ auth.cleanupSessions();
 setInterval(auth.cleanupSessions, 6 * 60 * 60 * 1000).unref();
 
 app.listen(config.port, () => {
-  console.log(`Sorriso in Salute in ascolto su http://localhost:${config.port}`);
+  console.log(`Smile Up in ascolto su http://localhost:${config.port}`);
   if (!config.adminEmails.length) {
     console.log('Nessun amministratore configurato: imposta ADMIN_EMAILS per accedere all\'area docenti.');
   }

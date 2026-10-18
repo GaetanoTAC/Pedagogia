@@ -142,7 +142,7 @@ export function badge3d({ label = 'Open Badge Salute Orale: trascina per ruotarl
           <defs><linearGradient id="cb${++badgeSeq}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#003A80"/><stop offset="1" stop-color="#0A6BC2"/></linearGradient></defs>
           <polygon points="120,8 214,62 214,170 120,224 26,170 26,62" fill="#B5E1F3"/>
           <polygon points="120,22 202,69 202,163 120,210 38,163 38,69" fill="url(#cb${badgeSeq})"/>
-          <text x="120" y="96" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="700" font-size="15" fill="#fff">Sorriso in Salute</text>
+          <text x="120" y="96" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="700" font-size="15" fill="#fff">Smile Up</text>
           <text x="120" y="122" text-anchor="middle" font-family="Poppins, sans-serif" font-size="10" letter-spacing="1.5" fill="#B5E1F3">CORSO DI SALUTE ORALE</text>
           <text x="120" y="146" text-anchor="middle" font-family="Poppins, sans-serif" font-size="10" fill="#DCF1FA">10 lezioni · 10 quiz</text>
           <text x="120" y="172" text-anchor="middle" font-family="Poppins, sans-serif" font-size="8.5" letter-spacing="1.5" fill="#8FD0EC">UNIVERSITÀ DEGLI STUDI</text>
